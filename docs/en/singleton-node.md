@@ -66,7 +66,7 @@ if BossFightDirector.i:
 
 Use `ensure_for()` to create the singleton if it doesn't exist:
 
-- **Automatic**: Call it in the main scene's `_ready()` for services needed immediately.
+- **Automatic**: Call it in the main scene's `_enter_tree()` for services needed immediately.
 - **On-demand**: Call it after a player event (like saving, loading, entering a boss fight).
 
 ```gdscript
