@@ -19,7 +19,7 @@ static func ensure_for(script: Script, root: Node, instance_name: String = "") -
 	if instance_name != "":
 		inst.name = instance_name
 
-	root.add_child(inst)
+	root.add_child.call_deferred(inst)
 	return inst
 
 # Register this node as the active instance for its script.
