@@ -2,8 +2,8 @@ extends SingletonNode
 class_name ToastService
 
 # Central singleton entry point to show toast notifications.
-const TOAST_VIEW_SCENE := preload("res://addons/jcd-gameforge-godot/ui/toast/scenes/toast_view.tscn")
-var DEFAULT_THEME := load("res://addons/jcd-gameforge-godot/ui/toast/themes/toast_default.tres") as ToastTheme
+const TOAST_VIEW_SCENE := preload("res://addons/ss-gameforge-godot/ui/toast/scenes/toast_view.tscn")
+var DEFAULT_THEME := load("res://addons/ss-gameforge-godot/ui/toast/themes/toast_default.tres") as ToastTheme
 
 @export var theme: ToastTheme
 @export var max_queue := 50

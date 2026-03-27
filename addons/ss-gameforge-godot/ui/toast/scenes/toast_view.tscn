@@ -1,7 +1,7 @@
 [gd_scene load_steps=5 format=3 uid="uid://c1dpeiaf2f01h"]
 
-[ext_resource type="Script" uid="uid://bsavn76s8pw8t" path="res://addons/jcd-gameforge-godot/ui/toast/view/toast_view.gd" id="1_e8yo0"]
-[ext_resource type="Script" uid="uid://cx1gdonlhiyml" path="res://addons/jcd-gameforge-godot/ui/toast/theme/toast_theme.gd" id="2_e8yo0"]
+[ext_resource type="Script" uid="uid://bsavn76s8pw8t" path="res://addons/ss-gameforge-godot/ui/toast/view/toast_view.gd" id="1_e8yo0"]
+[ext_resource type="Script" uid="uid://cx1gdonlhiyml" path="res://addons/ss-gameforge-godot/ui/toast/theme/toast_theme.gd" id="2_e8yo0"]
 [ext_resource type="Texture2D" uid="uid://b6qtpirxeg8de" path="res://icon.svg" id="3_xp5ys"]
 
 [sub_resource type="Resource" id="Resource_e8yo0"]

@@ -78,10 +78,10 @@ Dialogue.choose(0)
 2. Activa el plugin desde `Project Settings -> Plugins`.
 3. Instala los autoloads requeridos desde el panel del plugin si el módulo lo necesita.
 
-> Nota de naming: la identidad pública del repositorio ya es
-> `ss-gameforge-godot`, pero el directorio interno actual del addon y varios
-> resource paths de Godot todavía usan `addons/jcd-gameforge-godot/`. Mantén ese
-> path interno hasta que se haga la migración de código dedicada.
+> Nota de naming: la identidad pública del repositorio y el path interno del
+> addon en Godot ahora quedan alineados como `ss-gameforge-godot` y
+> `addons/ss-gameforge-godot/`. Usa ese path al copiar el addon a proyectos
+> reales.
 
 ## Roadmap
 

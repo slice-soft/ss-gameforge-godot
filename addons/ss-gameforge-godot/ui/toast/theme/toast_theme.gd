@@ -14,17 +14,17 @@ class_name ToastTheme
 @export_group("Info")
 @export var info_background_color := Color("#2D9CDB")
 @export var info_text_color := Color.WHITE
-@export var info_icon: Texture2D = load("res://addons/jcd-gameforge-godot/ui/toast/assets/icons/info.svg")
+@export var info_icon: Texture2D = load("res://addons/ss-gameforge-godot/ui/toast/assets/icons/info.svg")
 
 @export_group("Success")
 @export var success_background_color := Color("#27AE60")
 @export var success_text_color := Color.WHITE
-@export var success_icon: Texture2D = load("res://addons/jcd-gameforge-godot/ui/toast/assets/icons/success.svg")
+@export var success_icon: Texture2D = load("res://addons/ss-gameforge-godot/ui/toast/assets/icons/success.svg")
 
 @export_group("Danger")
 @export var danger_background_color := Color("#EB5757")
 @export var danger_text_color := Color.WHITE
-@export var danger_icon: Texture2D = load("res://addons/jcd-gameforge-godot/ui/toast/assets/icons/danger.svg")
+@export var danger_icon: Texture2D = load("res://addons/ss-gameforge-godot/ui/toast/assets/icons/danger.svg")
 
 @export_group("Custom")
 @export var custom_background_color := Color("#333333")
@@ -34,5 +34,5 @@ class_name ToastTheme
 @export_group("Loader")
 @export var loader_background_color := Color("#333333")
 @export var loader_text_color := Color.WHITE
-@export var loader_icon: Texture2D = load("res://addons/jcd-gameforge-godot/ui/toast/assets/icons/loader.svg")
+@export var loader_icon: Texture2D = load("res://addons/ss-gameforge-godot/ui/toast/assets/icons/loader.svg")
 @export var loader_spin_speed := 1.5

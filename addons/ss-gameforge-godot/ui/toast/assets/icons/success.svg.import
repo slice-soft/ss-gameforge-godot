@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://c6c75vf8qmnim"
-path="res://.godot/imported/success.svg-401197039a078662b3b3ce978a91974f.ctex"
+path="res://.godot/imported/success.svg-5f31f0a62427bb9f02c5d886a9458505.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://addons/jcd-gameforge-godot/ui/toast/assets/icons/success.svg"
-dest_files=["res://.godot/imported/success.svg-401197039a078662b3b3ce978a91974f.ctex"]
+source_file="res://addons/ss-gameforge-godot/ui/toast/assets/icons/success.svg"
+dest_files=["res://.godot/imported/success.svg-5f31f0a62427bb9f02c5d886a9458505.ctex"]
 
 [params]
 

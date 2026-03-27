@@ -16,3 +16,6 @@ export_presets.cfg
 
 # Temp
 temp
+
+examples/**
+docs/**
