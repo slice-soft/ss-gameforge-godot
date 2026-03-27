@@ -7,7 +7,7 @@ signal finished
 @export_group("Debug")
 @export var debug_on_ready := false
 @export var debug_theme: ToastTheme = load("res://addons/ss-gameforge-godot/ui/toast/themes/toast_default.tres") as ToastTheme
-@export var debug_text := "Toast de prueba"
+@export var debug_text := "Sample toast"
 @export var debug_style := ToastConstants.ToastStyle.INFO
 @export var debug_options: Dictionary = {}
 
