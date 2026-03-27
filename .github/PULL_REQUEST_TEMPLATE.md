@@ -1,54 +1,51 @@
-## 📝 Description
-<!-- Provide a clear and concise description of what this PR does -->
+## Description
+<!-- Explain what changed and why -->
 
-## 🔗 Related Issue
-<!-- Link to the issue this PR addresses. If there's no issue, explain why this PR is needed -->
-Fixes #(issue)
+## Related Issue
+<!-- Link the related issue, or explain why none exists -->
+Closes #(issue)
 
-## 🎯 Type of Change
-<!-- Mark the relevant option with an "x" -->
-- [ ] 🐛 Bug fix (non-breaking change that fixes an issue)
-- [ ] ✨ New feature (non-breaking change that adds functionality)
-- [ ] 💥 Breaking change (fix or feature that would cause existing functionality to not work as expected)
-- [ ] 📚 Documentation update
-- [ ] 🔧 Configuration/Build change
-- [ ] ♻️ Code refactoring
-- [ ] 🎨 UI/UX improvement
+## Type of Change
+- [ ] Bug fix
+- [ ] New feature
+- [ ] Breaking change
+- [ ] Documentation update
+- [ ] Configuration or build change
+- [ ] Refactor
 
-## 🧱 Module(s) Affected
-<!-- Which GameForge modules does this PR modify? -->
+## Semver Label
+<!-- Every PR should carry exactly one semver label -->
+- [ ] patch
+- [ ] minor
+- [ ] major
+
+## Area
 - [ ] SingletonNode
 - [ ] EventBus
-- [ ] State Machine (FSM)
+- [ ] State Machine
 - [ ] Toast UI
 - [ ] Dialogue Manager
-- [ ] Core/Plugin
-- [ ] Other: ___________
+- [ ] Core or plugin
+- [ ] Documentation
+- [ ] Other
 
-## ✅ Checklist
-<!-- Mark completed items with an "x" -->
-- [ ] My code follows the code style of this project
-- [ ] I have tested my changes in Godot 4.x
-- [ ] My changes generate no new errors or warnings
-- [ ] I have commented my code, particularly in hard-to-understand areas
-- [ ] I have updated the documentation accordingly
-- [ ] My changes maintain backward compatibility (or breaking changes are documented)
+## Validation
+- [ ] PR title follows Conventional Commits
+- [ ] I validated the change in Godot 4.x
+- [ ] I updated the documentation when needed
+- [ ] I did not mix unrelated concerns in this PR
+- [ ] Breaking changes are documented
 
-## 🧪 Testing
-<!-- Describe the tests you ran to verify your changes -->
+## Testing
 
-**Test Configuration**:
-- Godot Version: 
-- OS: 
-- GameForge Version: 
+**Godot version**:
 
-**Test Steps**:
-1. 
-2. 
-3. 
+**OS**:
 
-## 📸 Screenshots (if applicable)
-<!-- Add screenshots to demonstrate the changes -->
+**Steps**:
+1.
+2.
+3.
 
-## 📋 Additional Notes
-<!-- Any additional information that reviewers should know -->
+## Additional Notes
+<!-- Any extra reviewer context -->

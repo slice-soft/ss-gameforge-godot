@@ -1,118 +1,53 @@
-# Contributing to jcd-gameforge
+# Contributing to ss-gameforge-godot
 
-Hi! 👋  
-Thanks for your interest in contributing to **jcd-gameforge**. Contributions from the community help make this project better for everyone.
+The base contributing guide, commit conventions, PR rules, and community
+standards live in the
+[ss-community](https://github.com/slice-soft/ss-community/blob/main/CONTRIBUTING.md)
+repository. Read that first.
 
-This document outlines how to contribute in a way that keeps the project maintainable, consistent, and reliable.
-
----
-
-## How to contribute
-
-Contributions can take many forms, including:
-- Bug reports
-- Documentation improvements
-- Bug fixes
-- Small improvements to existing modules
-
-Before investing time in a large change, please read the guidelines below carefully.
+This document covers only what is specific to this repository.
 
 ---
 
-## Reporting bugs and opening issues
+## Requirements
 
-If you encounter a bug or unexpected behavior, please open an issue.
+- Godot 4.x
+- Git
 
-When possible, include:
-- A clear description of the problem
-- Steps to reproduce it
-- Expected vs actual behavior
-- Godot version and relevant context
+## Setup
 
-Please don’t worry if your report is incomplete or turns out to be a duplicate. This project is maintained by volunteers, and all reports are appreciated.
+```bash
+git clone https://github.com/your-username/ss-gameforge-godot.git
+cd ss-gameforge-godot
+```
 
----
+Open the project in Godot and enable the plugin from `Project Settings -> Plugins`.
 
-## Feature requests and new functionality
+## Validation
 
-If you want to add a **new feature or major functionality**, please **open an issue or contact me first** to discuss it before starting work.
+There is no automated test suite for this addon yet. For every behavior change,
+validate the affected module manually in Godot before opening a PR.
 
-This helps ensure that:
-- The feature aligns with the project’s vision
-- The scope is well defined
-- The change does not introduce breaking behavior
-- The implementation fits the existing architecture
+Recommended validation checklist:
 
-Large pull requests created without prior discussion may be declined, even if well implemented.
+- Open the repository project in Godot without editor errors
+- Enable the plugin and confirm the addon loads correctly
+- Smoke test the module you changed in a sample scene or integration project
+- Update the corresponding documentation when behavior, API, or setup changes
 
----
+## Repository-specific rules
 
-## Pull request guidelines
+- Keep each PR focused on a single module or a single documentation concern
+- Use Slice Soft repository naming in docs and repo metadata: `ss-gameforge-godot`
+- Do not rename `addons/jcd-gameforge-godot` or embedded Godot resource paths as
+  part of unrelated work; that internal migration must happen in a dedicated PR
+- If you add a new module, include usage documentation in both `README` and the
+  relevant file under `docs/`
+- Breaking changes must follow the policy in
+  [VERSIONING.md](https://github.com/slice-soft/ss-community/blob/main/VERSIONING.md)
 
-To keep the project healthy and easy to review, please follow these rules when submitting a pull request:
+## Questions
 
-### 1. One pull request per responsibility
-Each pull request must focus on **a single functionality or module**.
-
-Please avoid:
-- Mixing changes across multiple modules
-- Combining refactors, new features, and bug fixes in the same PR
-- Including unrelated formatting or cleanup changes
-
-If you want to modify multiple modules, submit **separate pull requests**, one per module or concern.
-
----
-
-### 2. Code quality expectations
-All contributions must:
-- Be compatible with **Godot 4.x**
-- Use **typed GDScript** where applicable
-- Follow existing patterns and conventions
-- Avoid introducing hidden side effects or tight coupling
-
-Code should be clear, readable, and maintainable.
-
----
-
-### 3. Documentation is required
-Any change that affects behavior, APIs, or usage **must update the relevant documentation**.
-
-This includes:
-- Module documentation
-- README sections
-- Inline comments when appropriate
-
-If the documentation is missing or outdated, the pull request may be requested to be updated before review.
-
----
-
-### 4. Testing and validation
-Before submitting a pull request, make sure that:
-- The feature or fix works as intended
-- Existing functionality is not broken
-- The change has been tested in a real Godot project
-
-Pull requests should be in a **clean, mergeable state** before review.
-
----
-
-## Branches
-
-All development happens on the `main` branch.
-
-Please create a new branch in your fork for your changes and submit pull requests targeting `main`.
-
----
-
-## Licensing
-
-By contributing to this project, you agree that your contributions will be licensed under the **MIT License**, the same license as the project.
-
----
-
-## Code of Conduct
-
-This project follows the **Contributor Covenant Code of Conduct**.  
-By participating, you agree to uphold its standards.
-
-Please see [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for details.
+Open a
+[Discussion](https://github.com/slice-soft/ss-gameforge-godot/discussions)
+instead of an issue for questions about implementation details or design direction.

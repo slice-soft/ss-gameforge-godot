@@ -1,51 +1,40 @@
 <img src="icon.svg" width="128" height="128">
 
-# jcd-gameforge
+# GameForge para Godot
 
 [English Version](README.md)
 
-**GameForge** es un conjunto de herramientas y patrones reutilizables para **Godot Engine 4.x**, pensado para acelerar el desarrollo sin imponer un estilo rígido.
+`ss-gameforge-godot` es el toolkit reutilizable de Slice Soft para
+**Godot Engine 4.x**. Reúne bloques prácticos de gameplay y arquitectura para
+acelerar proyectos sin imponer una estructura rígida.
 
-No es un fork del engine, no es un starter-kit desechable.  
-Es una **base de gameplay y arquitectura** que puedes llevar de proyecto en proyecto.
+[![Release](https://img.shields.io/github/v/release/slice-soft/ss-gameforge-godot)](https://github.com/slice-soft/ss-gameforge-godot/releases)
+![Godot](https://img.shields.io/badge/Godot-4.x-478CBF?logo=godotengine&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-green)
+![Made in Colombia](https://img.shields.io/badge/Made%20in-Colombia-FCD116?labelColor=003893)
+[![Sponsor](https://img.shields.io/badge/Sponsor-SliceSoft-003893?logo=github-sponsors&logoColor=green)](https://github.com/sponsors/slice-soft)
 
-> Menos repetir código.  
-> Más foco en diseño, juego y experiencia.
+## Filosofía
 
----
+GameForge sigue una línea simple:
 
-## ✨ ¿Qué es GameForge?
+- **Opt-in sobre lock-in**: usa solo los módulos que tu juego necesita
+- **Legible sobre mágico**: el código debe poder inspeccionarse y extenderse con facilidad
+- **Reutilizable sobre desechable**: la base debe servir en varios proyectos Godot
+- **Práctico sobre ceremonial**: resolver problemas comunes con APIs pequeñas y directas
 
-GameForge es un **addon modular** que reúne soluciones prácticas a problemas comunes en Godot:
+## Módulos incluidos
 
-- Manejo de singletons sin boilerplate  
-- Comunicación desacoplada entre sistemas  
-- Máquinas de estado claras y extensibles  
-- UI utilitaria lista para usar  
-- Diálogos desacoplados de la lógica  
-
-Todo escrito en **GDScript 2.0**, orientado a Godot 4.x, con APIs simples y código legible.
-
----
-
-## 🧱 Módulos principales
-
-### 🔹 SingletonNode
-Acceso limpio y seguro a servicios globales.
+### SingletonNode
+Acceso seguro a singletons tipo servicio.
 
 ```gdscript
 SaveService.i.save_game()
 BossFightDirector.i.next_phase()
 ```
 
-- Evita `get_node()` por todo el proyecto  
-- Mensajes de error claros  
-- Opcional: auto-carga si no existe  
-
----
-
-### 🔹 EventBus
-Comunicación global desacoplada, sin dependencias directas.
+### EventBus
+Comunicación desacoplada entre sistemas sin referencias fuertes.
 
 ```gdscript
 EventBus.on(self, {
@@ -56,104 +45,70 @@ EventBus.on(self, {
 EventBus.emit("player_died", player_id)
 ```
 
-- Registro por rutas  
-- Validación de métodos  
-- Sin conexiones duplicadas  
+### State Machine
+Utilidades FSM orientadas a gameplay para personajes, enemigos, UI y flujos.
 
----
-
-### 🔹 State Machine (FSM)
-Máquinas de estado pensadas para gameplay real.
-
-- Estados con `enter / exit / update / physics`  
-- Cambios explícitos y controlados  
-- Compatible con animaciones sin acoplarse  
-
-Ideal para:
-- Personajes  
-- Enemigos  
-- UI states  
-- Flujos de juego  
-
----
-
-### 🔹 Toast UI
-Feedback visual rápido y consistente.
+### Toast UI
+Helpers de feedback visual con cola, animaciones y soporte de temas.
 
 ```gdscript
-Toast.show("Guardado ✅")
+Toast.show("Guardado")
 Toast.warn("Sin conexión")
 Toast.error("Error al cargar")
 ```
 
-- Cola de mensajes  
-- Animaciones suaves  
-- Uso inmediato, sin setup complejo  
-
----
-
-### 🔹 Dialogue Manager
-Sistema de diálogos desacoplado del UI.
-
-- Manejo de líneas y elecciones  
-- Emite señales, no controla la vista  
-- Preparado para crecer (quests, triggers, tags)
+### Dialogue Manager
+Orquestación de diálogos desacoplada de la presentación.
 
 ```gdscript
 Dialogue.play("intro")
 Dialogue.choose(0)
 ```
 
----
+## Documentación
 
-## 🧩 Filosofía
+- [English: SingletonNode](docs/en/singleton-node.md)
+- [English: Toast](docs/en/toast.md)
+- [Español: SingletonNode](docs/es/singleton-node.md)
+- [Español: Toast](docs/es/toast.md)
 
-GameForge sigue estas ideas:
+## Primeros pasos
 
-- **Opt-in**: nada se impone, tú decides qué usar  
-- **Modular**: usa solo los módulos que necesites  
-- **Legible**: el código es documentación  
-- **Escalable**: sirve para prototipos y proyectos grandes  
-- **Sin magia oculta**: lo que pasa, se ve  
+1. Copia el addon de este repositorio dentro de `res://addons/` en tu proyecto Godot.
+2. Activa el plugin desde `Project Settings -> Plugins`.
+3. Instala los autoloads requeridos desde el panel del plugin si el módulo lo necesita.
 
----
+> Nota de naming: la identidad pública del repositorio ya es
+> `ss-gameforge-godot`, pero el directorio interno actual del addon y varios
+> resource paths de Godot todavía usan `addons/jcd-gameforge-godot/`. Mantén ese
+> path interno hasta que se haga la migración de código dedicada.
 
-## 📦 Instalación
+## Roadmap
 
-1. Copia el addon en tu proyecto:
-```
-res://addons/jcd-gameforge/
-```
+- [ ] Wizard de autoloads
+- [ ] Generadores de escenas y features
+- [ ] Importadores de diálogos (JSON / CSV)
+- [ ] Documentación ampliada por módulo
+- [ ] Escenas demo
 
-2. Activa el plugin desde:
-```
-Project Settings → Plugins
-```
+## Contribuir
 
-3. (Opcional) Instala los autoloads desde el panel del plugin.
+Consulta [CONTRIBUTING.md](./CONTRIBUTING.md) para setup y reglas específicas
+de este repositorio. El flujo general, las convenciones de commit y las normas
+de comunidad viven en
+[ss-community](https://github.com/slice-soft/ss-community/blob/main/CONTRIBUTING.md).
 
----
+## Comunidad
 
-## 🗺️ Roadmap (alto nivel)
+| Documento | |
+|---|---|
+| [CONTRIBUTING.md](https://github.com/slice-soft/ss-community/blob/main/CONTRIBUTING.md) | Flujo de trabajo, commits y PRs |
+| [GOVERNANCE.md](https://github.com/slice-soft/ss-community/blob/main/GOVERNANCE.md) | Toma de decisiones y roles |
+| [CODE_OF_CONDUCT.md](https://github.com/slice-soft/ss-community/blob/main/CODE_OF_CONDUCT.md) | Estándares de comunidad |
+| [VERSIONING.md](https://github.com/slice-soft/ss-community/blob/main/VERSIONING.md) | Política SemVer y breaking changes |
+| [SECURITY.md](https://github.com/slice-soft/ss-community/blob/main/SECURITY.md) | Reporte de vulnerabilidades |
+| [MAINTAINERS.md](https://github.com/slice-soft/ss-community/blob/main/MAINTAINERS.md) | Maintainers activos |
 
-- [ ] Wizard de autoloads  
-- [ ] Scene / Feature generator  
-- [ ] Importadores de diálogos (JSON / CSV)  
-- [ ] Documentación por módulo  
-- [ ] Escenas demo  
+## Licencia
 
----
-
-## 👤 Autor
-
-Creado por **JuanCaDev**  
-Ingeniero de software, creador de contenido y desarrollador de juegos con Godot.
-
-Este proyecto nace de experiencia real en proyectos personales y profesionales, buscando un equilibrio entre **arquitectura limpia** y **practicidad diaria**.
-
----
-
-## 📜 Licencia
-
-MIT – úsalo, modifícalo, llévalo a producción.  
-Si te sirve, disfrútalo. Si lo mejoras, mejor aún.
+MIT. Consulta [LICENSE](./LICENSE).
