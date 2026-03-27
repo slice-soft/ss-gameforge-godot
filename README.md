@@ -78,10 +78,9 @@ Dialogue.choose(0)
 2. Enable the plugin from `Project Settings -> Plugins`.
 3. Install the required autoloads from the plugin panel if the module needs them.
 
-> Naming note: the public Slice Soft repository is `ss-gameforge-godot`, but the
-> current internal addon directory and Godot resource paths still use
-> `addons/jcd-gameforge-godot/`. Keep that internal path until the dedicated
-> code migration happens.
+> Naming note: the public repository and the internal Godot addon path are now
+> aligned as `ss-gameforge-godot` and `addons/ss-gameforge-godot/`. Use that
+> path when copying the addon into real projects.
 
 ## Roadmap
 

@@ -16,6 +16,7 @@ This document covers only what is specific to this repository.
 
 ## Setup
 
+Fork and clone the repository:
 ```bash
 git clone https://github.com/your-username/ss-gameforge-godot.git
 cd ss-gameforge-godot
@@ -39,8 +40,8 @@ Recommended validation checklist:
 
 - Keep each PR focused on a single module or a single documentation concern
 - Use Slice Soft repository naming in docs and repo metadata: `ss-gameforge-godot`
-- Do not rename `addons/jcd-gameforge-godot` or embedded Godot resource paths as
-  part of unrelated work; that internal migration must happen in a dedicated PR
+- Keep the internal addon directory and embedded Godot resource paths aligned as
+  `addons/ss-gameforge-godot` in code, docs, and release artifacts
 - If you add a new module, include usage documentation in both `README` and the
   relevant file under `docs/`
 - Breaking changes must follow the policy in

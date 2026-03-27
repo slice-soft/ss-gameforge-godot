@@ -1,6 +1,6 @@
 [gd_resource type="Resource" script_class="ToastTheme" load_steps=2 format=3 uid="uid://cjna6j0n1uobr"]
 
-[ext_resource type="Script" uid="uid://cx1gdonlhiyml" path="res://addons/jcd-gameforge-godot/ui/toast/theme/toast_theme.gd" id="1_vcnvt"]
+[ext_resource type="Script" uid="uid://cx1gdonlhiyml" path="res://addons/ss-gameforge-godot/ui/toast/theme/toast_theme.gd" id="1_vcnvt"]
 
 [resource]
 script = ExtResource("1_vcnvt")

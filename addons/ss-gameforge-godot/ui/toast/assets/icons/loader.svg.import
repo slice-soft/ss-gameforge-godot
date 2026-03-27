@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dv4b36mud203b"
-path="res://.godot/imported/danger.svg-f6b0a9c20d86febc1cee83db76b06d21.ctex"
+uid="uid://6vncjfbb5mat"
+path="res://.godot/imported/loader.svg-16158e749a24b399c8dddf5279241ffe.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://addons/jcd-gameforge-godot/ui/toast/assets/icons/danger.svg"
-dest_files=["res://.godot/imported/danger.svg-f6b0a9c20d86febc1cee83db76b06d21.ctex"]
+source_file="res://addons/ss-gameforge-godot/ui/toast/assets/icons/loader.svg"
+dest_files=["res://.godot/imported/loader.svg-16158e749a24b399c8dddf5279241ffe.ctex"]
 
 [params]
 
