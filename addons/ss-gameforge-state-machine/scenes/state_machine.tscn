@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://bfq1ncu5m06mh"]
+
+[ext_resource type="Script" uid="uid://3mc21nbhnve1" path="res://addons/ss-gameforge-state-machine/scripts/state_machine.gd" id="1_1wfux"]
+
+[node name="StateMachine" type="Node"]
+script = ExtResource("1_1wfux")
