@@ -28,7 +28,7 @@ GameForge sigue una línea simple:
 <!-- ADDONS-TABLE:START -->
 | Addon | Version | Download |
 |-------|---------|----------|
-| `ss-gameforge-dialogue` | [v1.0.1](https://github.com/slice-soft/ss-gameforge-godot/releases/tag/ss-gameforge-dialogue-v1.0.1) | [`ss-gameforge-dialogue-v1.0.1.zip`](https://github.com/slice-soft/ss-gameforge-godot/releases/download/ss-gameforge-dialogue-v1.0.1/ss-gameforge-dialogue-v1.0.1.zip) |
+| `ss-gameforge-dialogue` | [v1.1.0](https://github.com/slice-soft/ss-gameforge-godot/releases/tag/ss-gameforge-dialogue-v1.1.0) | [`ss-gameforge-dialogue-v1.1.0.zip`](https://github.com/slice-soft/ss-gameforge-godot/releases/download/ss-gameforge-dialogue-v1.1.0/ss-gameforge-dialogue-v1.1.0.zip) |
 | `ss-gameforge-singleton` | [v1.0.1](https://github.com/slice-soft/ss-gameforge-godot/releases/tag/ss-gameforge-singleton-v1.0.1) | [`ss-gameforge-singleton-v1.0.1.zip`](https://github.com/slice-soft/ss-gameforge-godot/releases/download/ss-gameforge-singleton-v1.0.1/ss-gameforge-singleton-v1.0.1.zip) |
 | `ss-gameforge-state-machine` | [v1.0.1](https://github.com/slice-soft/ss-gameforge-godot/releases/tag/ss-gameforge-state-machine-v1.0.1) | [`ss-gameforge-state-machine-v1.0.1.zip`](https://github.com/slice-soft/ss-gameforge-godot/releases/download/ss-gameforge-state-machine-v1.0.1/ss-gameforge-state-machine-v1.0.1.zip) |
 | `ss-gameforge-toast` | [v1.0.1](https://github.com/slice-soft/ss-gameforge-godot/releases/tag/ss-gameforge-toast-v1.0.1) | [`ss-gameforge-toast-v1.0.1.zip`](https://github.com/slice-soft/ss-gameforge-godot/releases/download/ss-gameforge-toast-v1.0.1/ss-gameforge-toast-v1.0.1.zip) |
