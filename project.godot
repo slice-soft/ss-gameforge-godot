@@ -14,6 +14,11 @@ config/name="Game Forge Godot"
 config/features=PackedStringArray("4.5", "Forward Plus")
 config/icon="res://icon.svg"
 
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
+
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/ss-gameforge-dialogue/plugin.cfg", "res://addons/ss-gameforge-godot/plugin.cfg", "res://addons/ss-gameforge-singleton/plugin.cfg", "res://addons/ss-gameforge-state-machine/plugin.cfg", "res://addons/ss-gameforge-toast/plugin.cfg")
+enabled=PackedStringArray("res://addons/ss-gameforge-dialogue/plugin.cfg", "res://addons/ss-gameforge-singleton/plugin.cfg", "res://addons/ss-gameforge-state-machine/plugin.cfg", "res://addons/ss-gameforge-toast/plugin.cfg")

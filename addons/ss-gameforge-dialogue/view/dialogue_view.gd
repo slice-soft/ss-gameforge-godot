@@ -14,7 +14,7 @@ signal dialogue_finished
 ## Optional: assign a resource to auto-start when auto_start is true on it.
 @export var resource: DialogueResource
 
-@onready var _box: PanelContainer = $DialogueBox
+@onready var _box: MarginContainer = $DialogueBox
 @onready var _margin: MarginContainer = $DialogueBox/Margin
 @onready var _label: RichTextLabel = $DialogueBox/Margin/DialogueText
 @onready var _timer: Timer = $Timer
@@ -38,11 +38,25 @@ func _ready() -> void:
 
 
 ## Primary entry point. Call this to start a dialogue sequence.
+## Applies the current dialogue_theme before starting, so runtime theme changes take effect.
 func play(res: DialogueResource) -> void:
-	if _playing:
+	if _playing or not _timer.is_stopped():
 		return
+	apply_theme()
 	_resource = res
 	_timer.start(_resource.time_to_start)
+
+
+## Cancels the current dialogue and plays the close animation.
+## Safe to call at any time, including during the pre-start delay.
+func stop() -> void:
+	_timer.stop()
+	if not _playing:
+		return
+	if _current_tween != null:
+		_current_tween.kill()
+		_current_tween = null
+	_finish_dialogue()
 
 
 func apply_theme() -> void:
@@ -95,6 +109,7 @@ func _show_line() -> void:
 
 	var key := _resource.dialogues[_idx]
 	var line := tr(key) if _resource.use_translation else key
+	line = line.replace("\\n", "\n")
 	_label.text = line
 	_label.visible_ratio = 0.0
 	line_changed.emit(_idx)
