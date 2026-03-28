@@ -20,3 +20,32 @@ jobs:
     if: needs.release.outputs.releases_created == 'true'
     uses: slice-soft/ss-pipeline/.github/workflows/release-godot-addons.yml@v0
     secrets: inherit
+
+  update-readme-versions:
+    needs:
+      - release
+      - release-addons
+    if: needs.release.outputs.releases_created == 'true' && needs.release-addons.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Update README addon versions
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash scripts/update-readme-versions.sh
+
+      - name: Create pull request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore(main): update addons table"
+          title: "chore(main): update addons table"
+          body: "Automated README addon table update after release."
+          branch: chore/update-addons-table
+          delete-branch: true
+          base: main
+          add-paths: |
+            README.md
+            README.es.md
