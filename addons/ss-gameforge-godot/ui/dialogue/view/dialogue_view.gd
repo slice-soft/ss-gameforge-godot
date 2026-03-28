@@ -1,0 +1,204 @@
+class_name DialogueView extends Control
+
+## Emitted when the open animation finishes and typing begins.
+signal dialogue_started
+## Emitted each time a new line starts. index is 0-based.
+signal line_changed(index: int)
+## Emitted when all lines are done and the close animation finishes.
+signal dialogue_finished
+
+## Input action used to skip typing or advance to the next line.
+@export var skip_action: StringName = "ui_accept"
+## Visual configuration. When null, a built-in default style is applied.
+@export var dialogue_theme: DialogueTheme
+## Optional: assign a resource to auto-start when auto_start is true on it.
+@export var resource: DialogueResource
+
+@onready var _box: PanelContainer = $DialogueBox
+@onready var _margin: MarginContainer = $DialogueBox/Margin
+@onready var _label: RichTextLabel = $DialogueBox/Margin/DialogueText
+@onready var _timer: Timer = $Timer
+
+var _resource: DialogueResource
+var _idx: int = 0
+var _playing: bool = false
+var _current_tween: Tween
+
+
+func _ready() -> void:
+	_label.bbcode_enabled = true
+	_label.visible_ratio = 0.0
+	_box.visible = false
+	_box.size = Vector2.ONE
+	_box.scale = Vector2.ZERO
+	set_process_unhandled_input(false)
+	apply_theme()
+	if resource and resource.auto_start:
+		play(resource)
+
+
+## Primary entry point. Call this to start a dialogue sequence.
+func play(res: DialogueResource) -> void:
+	if _playing:
+		return
+	_resource = res
+	_timer.start(_resource.time_to_start)
+
+
+func apply_theme() -> void:
+	var t := dialogue_theme if dialogue_theme != null else _default_theme()
+
+	var style := StyleBoxFlat.new()
+	style.bg_color = t.background_color
+	style.border_color = t.border_color
+	style.set_border_width_all(t.border_width)
+	style.set_corner_radius_all(int(t.corner_radius))
+	_box.add_theme_stylebox_override("panel", style)
+
+	_margin.add_theme_constant_override("margin_left", int(t.padding.x))
+	_margin.add_theme_constant_override("margin_right", int(t.padding.x))
+	_margin.add_theme_constant_override("margin_top", int(t.padding.y))
+	_margin.add_theme_constant_override("margin_bottom", int(t.padding.y))
+
+	_label.add_theme_color_override("default_color", t.font_color)
+	_label.add_theme_font_size_override("normal_font_size", t.font_size)
+	if t.font:
+		_label.add_theme_font_override("normal_font", t.font)
+
+	_box.set_anchor_and_offset(SIDE_LEFT, 0.0, t.position_margin.x)
+	_box.set_anchor_and_offset(SIDE_TOP, 1.0, -t.position_margin.y)
+	_box.set_anchor_and_offset(SIDE_RIGHT, 1.0, -t.position_margin.x)
+	_box.set_anchor_and_offset(SIDE_BOTTOM, 1.0, 0.0)
+
+
+func _start_dialogue() -> void:
+	if _playing:
+		return
+	_box.visible = true
+	_playing = true
+	_idx = 0
+	set_process_unhandled_input(true)
+	dialogue_started.emit()
+	_animate_box(
+		Vector2.ONE,
+		_resource.open_time,
+		_resource.open_transition,
+		_resource.open_ease,
+		_show_line
+	)
+
+
+func _show_line() -> void:
+	if _idx >= _resource.dialogues.size():
+		_finish_dialogue()
+		return
+
+	var key := _resource.dialogues[_idx]
+	var line := tr(key) if _resource.use_translation else key
+	_label.text = line
+	_label.visible_ratio = 0.0
+	line_changed.emit(_idx)
+
+	var duration := maxf(0.01, _resource.text_speed * float(_bbcode_visible_length(line)))
+	_current_tween = create_tween()
+	_current_tween.tween_property(_label, "visible_ratio", 1.0, duration)
+	_current_tween.finished.connect(func():
+		_current_tween = null
+		_on_line_typed()
+	)
+
+
+func _on_line_typed() -> void:
+	match _resource.advance_mode:
+		DialogueConstants.AdvanceMode.AUTO, DialogueConstants.AdvanceMode.HYBRID:
+			_timer.start(_resource.hold_after_line)
+		DialogueConstants.AdvanceMode.MANUAL:
+			pass
+
+
+func _advance() -> void:
+	_idx += 1
+	_show_line()
+
+
+func _finish_dialogue() -> void:
+	set_process_unhandled_input(false)
+	_animate_box(
+		Vector2.ZERO,
+		_resource.close_time,
+		_resource.close_transition,
+		_resource.close_ease,
+		func():
+			_box.visible = false
+			_playing = false
+			_label.text = ""
+			dialogue_finished.emit()
+	)
+
+
+func _on_timer_timeout() -> void:
+	if not _playing:
+		_start_dialogue()
+		return
+	_advance()
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not _playing or not _resource.allow_skip:
+		return
+	if not event.is_action_pressed(skip_action):
+		return
+
+	if _current_tween != null and _current_tween.is_running():
+		_current_tween.kill()
+		_current_tween = null
+		_label.visible_ratio = 1.0
+		_on_line_typed()
+	else:
+		match _resource.advance_mode:
+			DialogueConstants.AdvanceMode.MANUAL, DialogueConstants.AdvanceMode.HYBRID:
+				if not _timer.is_stopped():
+					_timer.stop()
+				_advance()
+
+
+func _animate_box(
+	target_scale: Vector2,
+	time: float,
+	trans: Tween.TransitionType,
+	ease: Tween.EaseType,
+	callback: Callable
+) -> void:
+	_box.pivot_offset = _box.size / 2.0
+	var tween := create_tween()
+	tween.tween_property(_box, "scale", target_scale, time)\
+		.set_trans(trans)\
+		.set_ease(ease)
+	tween.finished.connect(callback)
+
+
+static func _bbcode_visible_length(s: String) -> int:
+	var n := 0
+	var in_tag := false
+	for i in s.length():
+		var ch := s[i]
+		if ch == "[":
+			in_tag = true
+		elif ch == "]" and in_tag:
+			in_tag = false
+		elif not in_tag:
+			n += 1
+	return n
+
+
+static func _default_theme() -> DialogueTheme:
+	var t := DialogueTheme.new()
+	t.background_color = Color(0.082, 0.082, 0.118, 0.921)
+	t.border_color = Color(0.255, 0.255, 0.353, 1.0)
+	t.border_width = 2
+	t.corner_radius = 10.0
+	t.padding = Vector2(16.0, 12.0)
+	t.font_color = Color.WHITE
+	t.font_size = 16
+	t.position_margin = Vector2(24.0, 24.0)
+	return t
