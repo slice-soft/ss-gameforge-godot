@@ -4,7 +4,7 @@
     "addons/ss-gameforge-singleton": {
       "release-type": "simple",
       "component": "ss-gameforge-singleton",
-      "changelog-path": "addons/ss-gameforge-singleton/CHANGELOG.md",
+      "changelog-path": "CHANGELOG.md",
       "pull-request-title-pattern": "chore(main): release ${version}"
     },
     "addons/ss-gameforge-state-machine": {
