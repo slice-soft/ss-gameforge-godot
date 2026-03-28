@@ -9,6 +9,8 @@ class_name DialogueResource extends Resource
 
 @export_group("Behavior")
 @export var auto_start: bool = false
+## Whether the player can interrupt typing or advance lines manually.
+## In AUTO mode, only the typing animation can be interrupted; the hold timer is not skippable.
 @export var allow_skip: bool = true
 @export var advance_mode: DialogueConstants.AdvanceMode = DialogueConstants.AdvanceMode.HYBRID
 ## Characters per second. Lower = slower reveal.

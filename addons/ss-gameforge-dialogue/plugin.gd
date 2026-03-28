@@ -1,19 +1,16 @@
 @tool
 extends EditorPlugin
 
-
-func _enable_plugin() -> void:
-	pass
-
-
-func _disable_plugin() -> void:
-	pass
+const _RESOURCE_SCRIPT = preload("core/models/dialogue_resource.gd")
+const _THEME_SCRIPT = preload("theme/dialogue_theme.gd")
 
 
 func _enter_tree() -> void:
-	pass
+	add_custom_type("DialogueResource", "Resource", _RESOURCE_SCRIPT, null)
+	add_custom_type("DialogueTheme", "Resource", _THEME_SCRIPT, null)
 
 
 func _exit_tree() -> void:
-	pass
+	remove_custom_type("DialogueResource")
+	remove_custom_type("DialogueTheme")
 
