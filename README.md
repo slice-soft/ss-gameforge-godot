@@ -23,6 +23,17 @@ GameForge is built around a few simple principles:
 - **Reusable over disposable**: carry the same foundation across multiple Godot projects
 - **Practical over ceremonial**: solve common problems with small, direct APIs
 
+## Addons
+
+<!-- ADDONS-TABLE:START -->
+| Addon | Version | Download |
+|-------|---------|----------|
+| `ss-gameforge-dialogue` | [v1.0.1](https://github.com/slice-soft/ss-gameforge-godot/releases/tag/ss-gameforge-dialogue-v1.0.1) | [`ss-gameforge-dialogue-v1.0.1.zip`](https://github.com/slice-soft/ss-gameforge-godot/releases/download/ss-gameforge-dialogue-v1.0.1/ss-gameforge-dialogue-v1.0.1.zip) |
+| `ss-gameforge-singleton` | [v1.0.1](https://github.com/slice-soft/ss-gameforge-godot/releases/tag/ss-gameforge-singleton-v1.0.1) | [`ss-gameforge-singleton-v1.0.1.zip`](https://github.com/slice-soft/ss-gameforge-godot/releases/download/ss-gameforge-singleton-v1.0.1/ss-gameforge-singleton-v1.0.1.zip) |
+| `ss-gameforge-state-machine` | [v1.0.1](https://github.com/slice-soft/ss-gameforge-godot/releases/tag/ss-gameforge-state-machine-v1.0.1) | [`ss-gameforge-state-machine-v1.0.1.zip`](https://github.com/slice-soft/ss-gameforge-godot/releases/download/ss-gameforge-state-machine-v1.0.1/ss-gameforge-state-machine-v1.0.1.zip) |
+| `ss-gameforge-toast` | [v1.0.1](https://github.com/slice-soft/ss-gameforge-godot/releases/tag/ss-gameforge-toast-v1.0.1) | [`ss-gameforge-toast-v1.0.1.zip`](https://github.com/slice-soft/ss-gameforge-godot/releases/download/ss-gameforge-toast-v1.0.1/ss-gameforge-toast-v1.0.1.zip) |
+<!-- ADDONS-TABLE:END -->
+
 ## Included Modules
 
 ### SingletonNode
