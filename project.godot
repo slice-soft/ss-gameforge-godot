@@ -21,4 +21,4 @@ window/size/viewport_height=720
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/ss-gameforge-dialogue/plugin.cfg", "res://addons/ss-gameforge-singleton/plugin.cfg", "res://addons/ss-gameforge-state-machine/plugin.cfg", "res://addons/ss-gameforge-toast/plugin.cfg")
+enabled=PackedStringArray("res://addons/ss-gameforge-dialogue/plugin.cfg", "res://addons/ss-gameforge-singleton/plugin.cfg", "res://addons/ss-gameforge-state-machine/plugin.cfg", "res://addons/ss-gameforge-toast/plugin.cfg", "res://addons/ss-gameforge-wired/plugin.cfg")
