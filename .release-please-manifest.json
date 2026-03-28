@@ -1,6 +1,6 @@
 {
   "addons/ss-gameforge-singleton": "1.0.1",
   "addons/ss-gameforge-state-machine": "1.0.1",
-  "addons/ss-gameforge-dialogue": "1.0.1",
+  "addons/ss-gameforge-dialogue": "1.1.0",
   "addons/ss-gameforge-toast": "1.0.1"
 }

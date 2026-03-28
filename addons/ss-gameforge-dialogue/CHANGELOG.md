@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/slice-soft/ss-gameforge-godot/compare/ss-gameforge-dialogue-v1.0.1...ss-gameforge-dialogue-v1.1.0) (2026-03-28)
+
+
+### Features
+
+* enhance dialogue functionality and implement BBCodeParser ([#13](https://github.com/slice-soft/ss-gameforge-godot/issues/13)) ([f45adbb](https://github.com/slice-soft/ss-gameforge-godot/commit/f45adbb6e566214da96efe88c6de17a91b955deb))
+
 ## [1.0.1](https://github.com/slice-soft/ss-gameforge-godot/compare/ss-gameforge-dialogue-v1.0.0...ss-gameforge-dialogue-v1.0.1) (2026-03-28)
 
 
