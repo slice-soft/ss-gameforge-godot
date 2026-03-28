@@ -10,19 +10,19 @@
     "addons/ss-gameforge-state-machine": {
       "release-type": "simple",
       "component": "ss-gameforge-state-machine",
-      "changelog-path": "addons/ss-gameforge-state-machine/CHANGELOG.md",
+      "changelog-path": "CHANGELOG.md",
       "pull-request-title-pattern": "chore(main): release ${version}"
     },
     "addons/ss-gameforge-dialogue": {
       "release-type": "simple",
       "component": "ss-gameforge-dialogue",
-      "changelog-path": "addons/ss-gameforge-dialogue/CHANGELOG.md",
+      "changelog-path": "CHANGELOG.md",
       "pull-request-title-pattern": "chore(main): release ${version}"
     },
     "addons/ss-gameforge-toast": {
       "release-type": "simple",
       "component": "ss-gameforge-toast",
-      "changelog-path": "addons/ss-gameforge-toast/CHANGELOG.md",
+      "changelog-path": "CHANGELOG.md",
       "pull-request-title-pattern": "chore(main): release ${version}"
     }
   }
