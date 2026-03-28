@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/slice-soft/ss-gameforge-godot/compare/ss-gameforge-toast-v1.0.0...ss-gameforge-toast-v1.0.1) (2026-03-28)
+
+
+### Bug Fixes
+
+* update changelog file paths for dialogue, state machine, and toast addons ([#10](https://github.com/slice-soft/ss-gameforge-godot/issues/10)) ([ab32c4e](https://github.com/slice-soft/ss-gameforge-godot/commit/ab32c4e2246ca88d9217e91678e9782414e50479))
+
 ## 1.0.0 (2026-03-28)
 
 
