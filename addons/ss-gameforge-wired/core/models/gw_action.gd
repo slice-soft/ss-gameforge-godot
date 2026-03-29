@@ -28,8 +28,10 @@ var positive_name: String = ""
 var negative_name: String = ""
 ## If false, this action does not appear as editable in the rebind UI.
 var allow_rebind: bool = true
-## Active bindings list.
+## Active bindings list (positive direction for AXIS actions).
 var bindings: Array[GWBinding] = []
+## Axis only — bindings that push toward -1.0.
+var negative_bindings: Array[GWBinding] = []
 
 
 # --- Binding management ---
@@ -88,6 +90,18 @@ func get_strength(assigned_devices: Array) -> float:
 	return best
 
 
+## For AXIS actions: returns net value in [-1.0, 1.0].
+## bindings push toward +1.0, negative_bindings push toward -1.0.
+func get_axis(assigned_devices: Array) -> float:
+	var pos := 0.0
+	for b in bindings:
+		pos = maxf(pos, b.get_strength(assigned_devices))
+	var neg := 0.0
+	for b in negative_bindings:
+		neg = maxf(neg, b.get_strength(assigned_devices))
+	return clampf(pos - neg, -1.0, 1.0)
+
+
 # --- Event-based evaluation ---
 
 ## Returns true if any binding matches a just-pressed InputEvent.
@@ -137,4 +151,6 @@ func duplicate_full() -> GWAction:
 	copy.allow_rebind = allow_rebind
 	for b in bindings:
 		copy.bindings.append(b.duplicate() as GWBinding)
+	for b in negative_bindings:
+		copy.negative_bindings.append(b.duplicate() as GWBinding)
 	return copy
