@@ -1,61 +1,7 @@
-[gd_resource type="Resource" script_class="GWConfig" load_steps=8 format=3 uid="uid://b6qh4gfnsr1b3"]
+[gd_resource type="Resource" script_class="GWConfig" load_steps=3 format=3]
 
-[ext_resource type="Script" uid="uid://b7bh2f5e4t14k" path="res://addons/ss-gameforge-wired/core/gw_action_config.gd" id="1_3f5ut"]
-[ext_resource type="Script" uid="uid://147f5pnkcxty" path="res://addons/ss-gameforge-wired/core/models/gw_binding.gd" id="2_x6cry"]
-[ext_resource type="Script" uid="uid://cpnp53cu4o6t3" path="res://addons/ss-gameforge-wired/core/gw_config.gd" id="3_5v01b"]
-
-[sub_resource type="Resource" id="Resource_ddcss"]
-script = ExtResource("1_3f5ut")
-action_name = "x_axis"
-display_name = "movimiento en x"
-description = ""
-category = "General"
-max_bindings = 2
-action_type = 1
-positive_name = "right"
-negative_name = "left"
-allow_rebind = true
-default_bindings = Array[ExtResource("2_x6cry")]([])
-
-[sub_resource type="Resource" id="Resource_5vcrr"]
-script = ExtResource("1_3f5ut")
-action_name = "y_axis"
-display_name = "movimiento en Y"
-description = ""
-category = "General"
-max_bindings = 2
-action_type = 1
-positive_name = "up"
-negative_name = "down"
-allow_rebind = true
-default_bindings = Array[ExtResource("2_x6cry")]([])
-
-[sub_resource type="Resource" id="Resource_ay31u"]
-script = ExtResource("1_3f5ut")
-action_name = "jump"
-display_name = "para saltar"
-description = ""
-category = "General"
-max_bindings = 2
-action_type = 0
-positive_name = ""
-negative_name = ""
-allow_rebind = true
-default_bindings = Array[ExtResource("2_x6cry")]([])
-
-[sub_resource type="Resource" id="Resource_6gmh1"]
-script = ExtResource("1_3f5ut")
-action_name = "attack"
-display_name = "para atacar"
-description = ""
-category = "General"
-max_bindings = 2
-action_type = 0
-positive_name = ""
-negative_name = ""
-allow_rebind = true
-default_bindings = Array[ExtResource("2_x6cry")]([])
+[ext_resource type="Script" path="res://addons/ss-gameforge-wired/core/gw_action_config.gd" id="1_3f5ut"]
+[ext_resource type="Script" path="res://addons/ss-gameforge-wired/core/gw_config.gd" id="3_5v01b"]
 
 [resource]
 script = ExtResource("3_5v01b")
-actions = Array[ExtResource("1_3f5ut")]([SubResource("Resource_ddcss"), SubResource("Resource_5vcrr"), SubResource("Resource_ay31u"), SubResource("Resource_6gmh1")])

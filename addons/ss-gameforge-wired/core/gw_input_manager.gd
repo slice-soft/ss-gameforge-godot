@@ -1,20 +1,14 @@
-## Central singleton for GodotWired.
-## Single entry point for gameplay code, rebind flow, device tracking and persistence.
-## Add to the scene tree with: GWInputManager.ensure(get_tree().root)
 extends SingletonNode
 class_name GWInputManager
 
-## Convenient singleton accessor.
 static var i: GWInputManager:
 	get:
 		return SingletonNode.get_instance_for(GWInputManager) as GWInputManager
 
 
-## Ensures a single GWInputManager instance exists as a child of root.
 static func ensure(root: Node) -> GWInputManager:
 	return SingletonNode.ensure_for(GWInputManager, root, "GWInputManager") as GWInputManager
 
-# --- Signals ---
 signal player_created(player_id: int)
 signal player_removed(player_id: int)
 signal device_connected(device_id: int, device_name: String)
@@ -35,6 +29,10 @@ var players: Dictionary = {}
 var devices: Dictionary = {}
 ## Active rebind context. Empty when not listening.
 var _rebind_ctx: Dictionary = {}
+## Frame number of the last just_pressed per player/action. { player_id: { action_name: frame } }
+var _just_pressed: Dictionary = {}
+## Frame number of the last just_released per player/action. { player_id: { action_name: frame } }
+var _just_released: Dictionary = {}
 
 
 # --- Lifecycle ---
@@ -47,6 +45,22 @@ func _ready() -> void:
 func _input(event: InputEvent) -> void:
 	if _rebind_ctx.get("listening", false):
 		_process_rebind_input(event)
+		return
+
+	var frame := Engine.get_process_frames()
+	for player_id in players:
+		var player: GWPlayer = players[player_id]
+		var devs := player.get_active_device_ids()
+		for action_name in player.actions:
+			var action: GWAction = player.actions[action_name]
+			if action.was_just_pressed(devs, event):
+				if not _just_pressed.has(player_id):
+					_just_pressed[player_id] = {}
+				(_just_pressed[player_id] as Dictionary)[action_name] = frame
+			if action.was_just_released(devs, event):
+				if not _just_released.has(player_id):
+					_just_released[player_id] = {}
+				(_just_released[player_id] as Dictionary)[action_name] = frame
 
 
 # --- Config API ---
@@ -182,20 +196,26 @@ func get_action_strength(action_name: String, player_id: int = 0) -> float:
 	return player.get_action_strength(action_name)
 
 
-## Returns true if the action was just pressed in the event for the given player.
-func is_action_just_pressed(action_name: String, event: InputEvent, player_id: int = 0) -> bool:
-	var player := get_player(player_id)
-	if player == null:
+## Returns true if the action was just pressed this frame (or in a specific event) for the given player.
+## When event is null, uses frame-state tracking — safe to call from _process().
+func is_action_just_pressed(action_name: String, event: InputEvent = null, player_id: int = 0) -> bool:
+	if get_player(player_id) == null:
 		return false
-	return player.is_action_just_pressed(action_name, event)
+	if event == null:
+		var frame := (_just_pressed.get(player_id, {}) as Dictionary).get(action_name, -1) as int
+		return frame == Engine.get_process_frames()
+	return (get_player(player_id) as GWPlayer).is_action_just_pressed(action_name, event)
 
 
-## Returns true if the action was just released in the event for the given player.
-func is_action_just_released(action_name: String, event: InputEvent, player_id: int = 0) -> bool:
-	var player := get_player(player_id)
-	if player == null:
+## Returns true if the action was just released this frame (or in a specific event) for the given player.
+## When event is null, uses frame-state tracking — safe to call from _process().
+func is_action_just_released(action_name: String, event: InputEvent = null, player_id: int = 0) -> bool:
+	if get_player(player_id) == null:
 		return false
-	return player.is_action_just_released(action_name, event)
+	if event == null:
+		var frame := (_just_released.get(player_id, {}) as Dictionary).get(action_name, -1) as int
+		return frame == Engine.get_process_frames()
+	return (get_player(player_id) as GWPlayer).is_action_just_released(action_name, event)
 
 
 ## Returns a movement vector from four action names for the given player.

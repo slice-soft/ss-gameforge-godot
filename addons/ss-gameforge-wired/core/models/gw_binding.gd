@@ -140,11 +140,41 @@ func get_display_name() -> String:
 				MOUSE_BUTTON_WHEEL_DOWN: return "Wheel Down"
 				_: return "Mouse %d" % mouse_button
 		BindingType.JOY_BUTTON:
-			return Input.get_joy_button_string(joy_button)
+			return _joy_button_name(joy_button)
 		BindingType.JOY_AXIS:
 			var dir_str := "+" if axis_direction > 0.0 else "-"
-			return "%s %s" % [Input.get_joy_axis_string(joy_axis), dir_str]
+			return "%s %s" % [_joy_axis_name(joy_axis), dir_str]
 	return "Unknown"
+
+
+static func _joy_button_name(button: JoyButton) -> String:
+	match button:
+		JOY_BUTTON_A:              return "A"
+		JOY_BUTTON_B:              return "B"
+		JOY_BUTTON_X:              return "X"
+		JOY_BUTTON_Y:              return "Y"
+		JOY_BUTTON_LEFT_SHOULDER:  return "LB"
+		JOY_BUTTON_RIGHT_SHOULDER: return "RB"
+		JOY_BUTTON_BACK:           return "Back"
+		JOY_BUTTON_START:          return "Start"
+		JOY_BUTTON_LEFT_STICK:     return "LS"
+		JOY_BUTTON_RIGHT_STICK:    return "RS"
+		JOY_BUTTON_DPAD_UP:        return "D-Up"
+		JOY_BUTTON_DPAD_DOWN:      return "D-Down"
+		JOY_BUTTON_DPAD_LEFT:      return "D-Left"
+		JOY_BUTTON_DPAD_RIGHT:     return "D-Right"
+		_:                         return "Button %d" % button
+
+
+static func _joy_axis_name(axis: JoyAxis) -> String:
+	match axis:
+		JOY_AXIS_LEFT_X:       return "LX"
+		JOY_AXIS_LEFT_Y:       return "LY"
+		JOY_AXIS_RIGHT_X:      return "RX"
+		JOY_AXIS_RIGHT_Y:      return "RY"
+		JOY_AXIS_TRIGGER_LEFT: return "LT"
+		JOY_AXIS_TRIGGER_RIGHT: return "RT"
+		_:                     return "Axis %d" % axis
 
 
 # --- Serialization ---

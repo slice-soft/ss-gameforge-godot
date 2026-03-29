@@ -1,27 +1,32 @@
 @tool
 extends EditorPlugin
 
-const _PANEL_SCRIPT = preload("res://addons/ss-gameforge-wired/editor/gw_editor_panel.gd")
+const _PANEL_SCRIPT = preload("res://addons/ss-gameforge-wired/scenes/gw_editor_panel.tscn")
 
-var _panel: Control = null
+var _panel: Control
 
 
 func _enter_tree() -> void:
-	_panel = _PANEL_SCRIPT.new()
-	_panel.name = "GodotWired"
-	add_control_to_dock(DOCK_SLOT_RIGHT_BL, _panel)
+	_panel = _PANEL_SCRIPT.instantiate() as Control
+	get_editor_interface().get_editor_main_screen().add_child(_panel)
+	_panel.owner = null
+	_panel.hide()
 
 
 func _exit_tree() -> void:
 	if _panel != null:
-		remove_control_from_docks(_panel)
 		_panel.queue_free()
-		_panel = null
+
+func _has_main_screen() -> bool:
+	return true
+
+func _make_visible(visible: bool) -> void:
+	if _panel:
+		_panel.visible = visible
 
 
-func _enable_plugin() -> void:
-	pass
+func _get_plugin_name() -> String:
+	return "GodotWired"
 
-
-func _disable_plugin() -> void:
-	pass
+func _get_plugin_icon() -> Texture2D:
+	return get_editor_interface().get_base_control().get_theme_icon("Node", "EditorIcons")

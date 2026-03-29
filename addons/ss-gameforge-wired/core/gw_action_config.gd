@@ -7,6 +7,8 @@ class_name GWActionConfig
 ## Whether this action represents a digital press or an analog axis.
 enum ActionType { BUTTON, AXIS }
 
+## Stable unique identifier for this action. Kept independent from action_name.
+@export var action_id: String = ""
 ## Internal identifier used in gameplay code (e.g. "jump", "move_left").
 @export var action_name: String = ""
 ## Label shown in the player's rebind screen.
