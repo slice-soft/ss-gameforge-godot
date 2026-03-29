@@ -26,26 +26,47 @@ jobs:
       - release
       - release-addons
     if: needs.release.outputs.releases_created == 'true' && needs.release-addons.result == 'success'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+    uses: slice-soft/ss-pipeline/.github/workflows/run-script-and-pr.yml@v0
+    secrets:
+      token: ${{ secrets.CROSS_REPO_TOKEN_GAMEFORGE }}
+    with:
+      script-path: scripts/update-readme-versions.sh
+      commit-message: "chore(main): update addons table"
+      pr-title: "chore(main): update addons table"
+      pr-body: "Automated README addon table update after release."
+      branch: chore/update-addons-table
+      add-paths: |
+        README.md
+        README.es.md
 
-      - name: Update README addon versions
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: bash scripts/update-readme-versions.sh
+  update-landing:
+    needs:
+      - release
+      - release-addons
+    if: needs.release.outputs.releases_created == 'true' && needs.release-addons.result == 'success'
+    uses: slice-soft/ss-pipeline/.github/workflows/run-script-and-pr.yml@v0
+    secrets:
+      token: ${{ secrets.CROSS_REPO_TOKEN_GAMEFORGE }}
+    with:
+      repository: slice-soft/ss-landing-gameforge
+      script-path: scripts/update-gameforge-versions.sh
+      commit-message: "chore(main): update gameforge addon versions"
+      pr-title: "chore(main): update gameforge addon versions"
+      pr-body: "Automated version update after gameforge release."
+      branch: chore/update-gameforge-versions
 
-      - name: Create pull request
-        uses: peter-evans/create-pull-request@v6
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "chore(main): update addons table"
-          title: "chore(main): update addons table"
-          body: "Automated README addon table update after release."
-          branch: chore/update-addons-table
-          delete-branch: true
-          base: main
-          add-paths: |
-            README.md
-            README.es.md
+  update-docs:
+    needs:
+      - release
+      - release-addons
+    if: needs.release.outputs.releases_created == 'true' && needs.release-addons.result == 'success'
+    uses: slice-soft/ss-pipeline/.github/workflows/run-script-and-pr.yml@v0
+    secrets:
+      token: ${{ secrets.CROSS_REPO_TOKEN_GAMEFORGE }}
+    with:
+      repository: slice-soft/ss-docs-gameforge
+      script-path: scripts/update-gameforge-versions.sh
+      commit-message: "chore(main): update gameforge addon versions"
+      pr-title: "chore(main): update gameforge addon versions"
+      pr-body: "Automated version update after gameforge release."
+      branch: chore/update-gameforge-versions
