@@ -16,6 +16,8 @@ signal device_disconnected(device_id: int)
 signal binding_remapped(player_id: int, action_name: String)
 signal rebind_listening(player_id: int, action_name: String, binding_index: int)
 signal rebind_cancelled(player_id: int)
+## Emitted when an unassigned device produces a press. Use this to drive "press to join" logic.
+signal unassigned_device_pressed(device_id: int)
 
 # --- Constants ---
 const DEFAULT_SAVE_PATH := "user://gw_bindings.json"
@@ -61,6 +63,11 @@ func _input(event: InputEvent) -> void:
 				if not _just_released.has(player_id):
 					_just_released[player_id] = {}
 				(_just_released[player_id] as Dictionary)[action_name] = frame
+
+	if _is_join_press(event):
+		var dev_id := _get_event_device_id(event)
+		if _is_device_unassigned(dev_id):
+			unassigned_device_pressed.emit(dev_id)
 
 
 # --- Config API ---
@@ -218,6 +225,14 @@ func is_action_just_released(action_name: String, event: InputEvent = null, play
 	return (get_player(player_id) as GWPlayer).is_action_just_released(action_name, event)
 
 
+## For AXIS actions: returns net value in [-1.0, 1.0] for the given player.
+func get_action_axis(action_name: String, player_id: int = 0) -> float:
+	var player := get_player(player_id)
+	if player == null:
+		return 0.0
+	return player.get_action_axis(action_name)
+
+
 ## Returns a movement vector from four action names for the given player.
 func get_vector(neg_x: String, pos_x: String, neg_y: String, pos_y: String, player_id: int = 0) -> Vector2:
 	var player := get_player(player_id)
@@ -345,6 +360,43 @@ func _on_joy_connection_changed(device_id: int, connected: bool) -> void:
 			(devices[device_id] as GWDevice).is_connected = false
 			devices.erase(device_id)
 		device_disconnected.emit(device_id)
+
+
+# --- Private: device join detection ---
+
+func _get_event_device_id(event: InputEvent) -> int:
+	if event is InputEventKey or event is InputEventMouseButton:
+		return -1
+	if event is InputEventJoypadButton:
+		return (event as InputEventJoypadButton).device
+	if event is InputEventJoypadMotion:
+		return (event as InputEventJoypadMotion).device
+	return -99
+
+
+func _is_join_press(event: InputEvent) -> bool:
+	if event is InputEventKey:
+		var ev := event as InputEventKey
+		return ev.is_pressed() and not ev.is_echo()
+	if event is InputEventMouseButton:
+		return (event as InputEventMouseButton).is_pressed()
+	if event is InputEventJoypadButton:
+		return (event as InputEventJoypadButton).is_pressed()
+	if event is InputEventJoypadMotion:
+		return absf((event as InputEventJoypadMotion).axis_value) > 0.5
+	return false
+
+
+func _is_device_unassigned(device_id: int) -> bool:
+	if device_id == -99:
+		return false
+	for player_id in players:
+		var player: GWPlayer = players[player_id]
+		if device_id == -1 and player.accepts_keyboard:
+			return false
+		if device_id >= 0 and player.assigned_gamepads.has(device_id):
+			return false
+	return true
 
 
 # --- Private: rebind processing ---

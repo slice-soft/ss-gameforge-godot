@@ -76,6 +76,14 @@ func get_action_strength(action_name: String) -> float:
 	return action.get_strength(get_active_device_ids())
 
 
+## For AXIS actions: returns net value in [-1.0, 1.0].
+func get_action_axis(action_name: String) -> float:
+	var action := _get_action(action_name)
+	if action == null:
+		return 0.0
+	return action.get_axis(get_active_device_ids())
+
+
 ## Returns true if the action was just pressed in the given event.
 ## Only true when the event's device belongs to this player.
 func is_action_just_pressed(action_name: String, event: InputEvent) -> bool:
@@ -152,9 +160,13 @@ func to_dict() -> Dictionary:
 		var binding_list: Array = []
 		for b in action.bindings:
 			binding_list.append(b.to_dict())
+		var neg_list: Array = []
+		for b in action.negative_bindings:
+			neg_list.append(b.to_dict())
 		action_dicts[a_name] = {
 			"action_name": action.action_name,
 			"bindings": binding_list,
+			"negative_bindings": neg_list,
 		}
 	return {
 		"player_id": player_id,
@@ -173,8 +185,11 @@ func apply_dict(d: Dictionary) -> void:
 			continue
 		var action: GWAction = actions[a_name]
 		action.clear_bindings()
+		action.negative_bindings.clear()
 		for b_dict in saved_actions[a_name].get("bindings", []):
 			action.add_binding(GWBinding.from_dict(b_dict))
+		for b_dict in saved_actions[a_name].get("negative_bindings", []):
+			action.negative_bindings.append(GWBinding.from_dict(b_dict))
 		action_rebound.emit(a_name)
 
 
