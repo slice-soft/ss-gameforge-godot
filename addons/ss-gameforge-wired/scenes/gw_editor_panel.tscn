@@ -1,0 +1,226 @@
+[gd_scene load_steps=2 format=3 uid="uid://cwe3xgjt2yxck"]
+
+[ext_resource type="Script" uid="uid://i8ccgmj048nn" path="res://addons/ss-gameforge-wired/scenes/gw_editor_panel.gd" id="1_6kum5"]
+
+[node name="GWEditorPanel" type="VBoxContainer"]
+custom_minimum_size = Vector2(480, 0)
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 6
+script = ExtResource("1_6kum5")
+
+[node name="SectionPlayerConfig" type="Label" parent="."]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.76737565, 0.8808251, 1, 1)
+theme_override_font_sizes/font_size = 11
+text = "Player Configuration"
+
+[node name="ModeRow" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="ModeLabel" type="Label" parent="ModeRow"]
+custom_minimum_size = Vector2(90, 0)
+layout_mode = 2
+text = "Mode"
+
+[node name="ModeOption" type="OptionButton" parent="ModeRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+selected = 0
+item_count = 3
+popup/item_0/text = "Single Player"
+popup/item_0/id = 0
+popup/item_1/text = "Local Co-op"
+popup/item_1/id = 1
+popup/item_2/text = "Online"
+popup/item_2/id = 2
+
+[node name="MaxPlayersRow" type="HBoxContainer" parent="."]
+visible = false
+layout_mode = 2
+
+[node name="MaxPlayersLabel" type="Label" parent="MaxPlayersRow"]
+custom_minimum_size = Vector2(90, 0)
+layout_mode = 2
+text = "Max Players"
+
+[node name="MaxPlayersSpin" type="SpinBox" parent="MaxPlayersRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = 2.0
+max_value = 8.0
+value = 2.0
+
+[node name="SeparatorTop" type="HSeparator" parent="."]
+layout_mode = 2
+
+[node name="MainSplit" type="HSplitContainer" parent="."]
+layout_mode = 2
+size_flags_vertical = 3
+split_offset = 170
+
+[node name="LeftPanel" type="VBoxContainer" parent="MainSplit"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ActionsTitle" type="Label" parent="MainSplit/LeftPanel"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.76737565, 0.8808251, 1, 1)
+theme_override_font_sizes/font_size = 11
+text = "Actions"
+
+[node name="ActionList" type="ItemList" parent="MainSplit/LeftPanel"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ActionButtonsRow" type="HBoxContainer" parent="MainSplit/LeftPanel"]
+layout_mode = 2
+
+[node name="AddActionButton" type="Button" parent="MainSplit/LeftPanel/ActionButtonsRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "+ Add"
+
+[node name="RemoveActionButton" type="Button" parent="MainSplit/LeftPanel/ActionButtonsRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "- Remove"
+
+[node name="RightPanel" type="VBoxContainer" parent="MainSplit"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="PropertiesTitle" type="Label" parent="MainSplit/RightPanel"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.76737565, 0.8808251, 1, 1)
+theme_override_font_sizes/font_size = 11
+text = "Properties"
+
+[node name="PropPlaceholder" type="Label" parent="MainSplit/RightPanel"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.735357, 0.735357, 0.735357, 1)
+text = "Select an action to edit its properties."
+
+[node name="PropGrid" type="GridContainer" parent="MainSplit/RightPanel"]
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 6
+columns = 2
+
+[node name="ActionIdTextLabel" type="Label" parent="MainSplit/RightPanel/PropGrid"]
+layout_mode = 2
+text = "Action Id"
+horizontal_alignment = 2
+
+[node name="ActionIdValueLabel" type="Label" parent="MainSplit/RightPanel/PropGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="NameTextLabel" type="Label" parent="MainSplit/RightPanel/PropGrid"]
+layout_mode = 2
+text = "Name"
+horizontal_alignment = 2
+
+[node name="PropName" type="LineEdit" parent="MainSplit/RightPanel/PropGrid"]
+layout_mode = 2
+
+[node name="DescriptiveNameTextLabel" type="Label" parent="MainSplit/RightPanel/PropGrid"]
+layout_mode = 2
+text = "Descriptive Name"
+horizontal_alignment = 2
+
+[node name="PropDescName" type="LineEdit" parent="MainSplit/RightPanel/PropGrid"]
+layout_mode = 2
+
+[node name="DescriptionTextLabel" type="Label" parent="MainSplit/RightPanel/PropGrid"]
+layout_mode = 2
+text = "Description"
+horizontal_alignment = 2
+
+[node name="PropDescription" type="LineEdit" parent="MainSplit/RightPanel/PropGrid"]
+layout_mode = 2
+placeholder_text = "e.g. Hold to charge, press to dash..."
+
+[node name="CategoryTextLabel" type="Label" parent="MainSplit/RightPanel/PropGrid"]
+layout_mode = 2
+text = "Category"
+horizontal_alignment = 2
+
+[node name="PropCategory" type="LineEdit" parent="MainSplit/RightPanel/PropGrid"]
+layout_mode = 2
+
+[node name="TypeTextLabel" type="Label" parent="MainSplit/RightPanel/PropGrid"]
+layout_mode = 2
+text = "Type"
+horizontal_alignment = 2
+
+[node name="PropType" type="OptionButton" parent="MainSplit/RightPanel/PropGrid"]
+layout_mode = 2
+item_count = 2
+popup/item_0/text = "Button"
+popup/item_0/id = 0
+popup/item_1/text = "Axis"
+popup/item_1/id = 1
+
+[node name="PositiveNameTextLabel" type="Label" parent="MainSplit/RightPanel/PropGrid"]
+layout_mode = 2
+text = "Positive Name"
+horizontal_alignment = 2
+
+[node name="PropPositiveName" type="LineEdit" parent="MainSplit/RightPanel/PropGrid"]
+layout_mode = 2
+placeholder_text = "e.g. right, up"
+
+[node name="NegativeNameTextLabel" type="Label" parent="MainSplit/RightPanel/PropGrid"]
+layout_mode = 2
+text = "Negative Name"
+
+[node name="PropNegativeName" type="LineEdit" parent="MainSplit/RightPanel/PropGrid"]
+layout_mode = 2
+placeholder_text = "e.g. left, down"
+
+[node name="AllowRebindTextLabel" type="Label" parent="MainSplit/RightPanel/PropGrid"]
+layout_mode = 2
+text = "Allow Rebind"
+
+[node name="PropAllowRebind" type="CheckBox" parent="MainSplit/RightPanel/PropGrid"]
+layout_mode = 2
+
+[node name="SeparatorBottom" type="HSeparator" parent="."]
+layout_mode = 2
+
+[node name="SectionConfigFile" type="Label" parent="."]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.76737565, 0.8808251, 1, 1)
+theme_override_font_sizes/font_size = 11
+text = "Config File"
+
+[node name="PathRow" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="PathEdit" type="LineEdit" parent="PathRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "res://gw_config.tres"
+placeholder_text = "res://gw_config.tres"
+
+[node name="LoadButton" type="Button" parent="PathRow"]
+layout_mode = 2
+text = "Load"
+
+[node name="SaveButton" type="Button" parent="."]
+layout_mode = 2
+text = "Save Config"
+
+[node name="StatusLabel" type="Label" parent="."]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7977378, 0.9309246, 0.7977378, 1)
+theme_override_font_sizes/font_size = 11
+text = "Config loaded from: res://gw_config.tres"

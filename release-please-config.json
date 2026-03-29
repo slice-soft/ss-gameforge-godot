@@ -24,6 +24,12 @@
       "component": "ss-gameforge-toast",
       "changelog-path": "CHANGELOG.md",
       "pull-request-title-pattern": "chore(main): release ${version}"
+    },
+    "addons/ss-gameforge-wired": {
+      "release-type": "simple",
+      "component": "ss-gameforge-wired",
+      "changelog-path": "CHANGELOG.md",
+      "pull-request-title-pattern": "chore(main): release ${version}"
     }
   }
 }
