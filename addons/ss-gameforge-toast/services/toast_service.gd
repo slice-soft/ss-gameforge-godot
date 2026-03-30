@@ -50,6 +50,29 @@ func loader(text: String, overrides: Dictionary = {}) -> void:
 	var merged := _prepare_loader_overrides(effective_theme, overrides)
 	show(text, ToastConstants.ToastStyle.LOADER, merged)
 
+# Shows a loader toast that stays open until the given signal fires.
+func loader_task(text: String, task: Signal, overrides: Dictionary = {}) -> void:
+	var effective_theme := _get_effective_theme()
+	var merged := _prepare_loader_overrides(effective_theme, overrides)
+	merged["duration"] = 0.0
+
+	var toast_data := ToastData.new(text, ToastConstants.ToastStyle.LOADER, merged)
+	var view := _spawn_view()
+
+	view.finished.connect(func():
+		_stack_manager.remove_view(view)
+		_try_show_next()
+	)
+
+	var resolved_data := ToastStyleResolver.resolve(_get_effective_theme(), toast_data.style, toast_data.overrides)
+	view.play(toast_data.text, resolved_data)
+	_stack_manager.add_view(view)
+
+	task.connect(func():
+		if is_instance_valid(view):
+			view.dismiss()
+	, CONNECT_ONE_SHOT)
+
 # Ensures loader toasts include a spinner-friendly icon configuration.
 func _prepare_loader_overrides(theme: ToastTheme, overrides: Dictionary) -> Dictionary:
 	var merged := overrides.duplicate()

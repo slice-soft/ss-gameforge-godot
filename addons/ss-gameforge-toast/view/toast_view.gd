@@ -21,6 +21,7 @@ var _stack_index := -1
 var _stack_spacing := 0.0
 var _icon_custom_node: Node = null
 var _icon_spin_tween: Tween = null
+var _open_tween: Tween = null
 var _position_request_id := 0
 
 # Plays a debug toast when enabled from the inspector.
@@ -74,13 +75,28 @@ func _apply_visual_styles(style_data: Dictionary) -> void:
 	_request_position_update(_base_position, _base_margin)
 
 # Starts the toast life cycle animation and emits when done.
+# If duration == 0.0, the toast stays open until dismiss() is called.
 func _start_animation(style_data: Dictionary) -> void:
 	modulate.a = 0.0
 	show()
-	
+
 	var duration: float = float(style_data.get("duration", 2.0))
-	var tween := ToastAnimator.play_toast_animation(self, duration)
-	
+
+	if duration > 0.0:
+		var tween := ToastAnimator.play_toast_animation(self, duration)
+		tween.finished.connect(func():
+			finished.emit()
+			queue_free()
+		)
+	else:
+		_open_tween = ToastAnimator.fade_in(self)
+
+# Manually closes the toast, triggering the fade-out animation.
+func dismiss() -> void:
+	if _open_tween != null and is_instance_valid(_open_tween):
+		_open_tween.kill()
+		_open_tween = null
+	var tween := ToastAnimator.fade_out(self)
 	tween.finished.connect(func():
 		finished.emit()
 		queue_free()
