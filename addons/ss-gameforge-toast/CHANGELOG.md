@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/slice-soft/ss-gameforge-godot/compare/ss-gameforge-toast-v1.0.1...ss-gameforge-toast-v1.1.0) (2026-03-30)
+
+
+### Features
+
+* **toast:** add loader toast functionality with task signal handling ([#23](https://github.com/slice-soft/ss-gameforge-godot/issues/23)) ([7313694](https://github.com/slice-soft/ss-gameforge-godot/commit/73136945a27507647ae53c01715723748a6bfb18))
+
 ## [1.0.1](https://github.com/slice-soft/ss-gameforge-godot/compare/ss-gameforge-toast-v1.0.0...ss-gameforge-toast-v1.0.1) (2026-03-28)
 
 
