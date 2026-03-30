@@ -86,8 +86,6 @@ func apply_theme() -> void:
 	_box.set_anchor_and_offset(SIDE_TOP, 1.0, -t.position_margin.y)
 	_box.set_anchor_and_offset(SIDE_RIGHT, 1.0, -t.position_margin.x)
 	_box.set_anchor_and_offset(SIDE_BOTTOM, 1.0, 0.0)
-	# _box.set_anchor_and_offset(SIDE_BOTTOM, 1.0, -t.position_margin.y)
-	# _box.grow_vertical = Control.GROW_DIRECTION_BEGIN
 
 
 func _start_dialogue() -> void:
