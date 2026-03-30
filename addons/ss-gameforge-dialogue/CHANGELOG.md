@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.0](https://github.com/slice-soft/ss-gameforge-godot/compare/ss-gameforge-dialogue-v1.1.0...ss-gameforge-dialogue-v1.2.0) (2026-03-30)
+
+
+### Features
+
+* add signals to loader toast ([#25](https://github.com/slice-soft/ss-gameforge-godot/issues/25)) ([4cb9f79](https://github.com/slice-soft/ss-gameforge-godot/commit/4cb9f79d941d4695ccd9c9cf4c550253dd0276bd))
+* **toast:** add loader toast functionality with task signal handling ([#23](https://github.com/slice-soft/ss-gameforge-godot/issues/23)) ([7313694](https://github.com/slice-soft/ss-gameforge-godot/commit/73136945a27507647ae53c01715723748a6bfb18))
+
 ## [1.1.0](https://github.com/slice-soft/ss-gameforge-godot/compare/ss-gameforge-dialogue-v1.0.1...ss-gameforge-dialogue-v1.1.0) (2026-03-28)
 
 
