@@ -18,4 +18,6 @@ export_presets.cfg
 temp
 
 examples/**
+!examples/showcase/
+!examples/showcase/**
 docs/**
