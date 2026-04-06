@@ -1,0 +1,66 @@
+[gd_scene load_steps=12 format=3 uid="uid://5gl47dkwicfb"]
+
+[ext_resource type="Script" uid="uid://nauttn3jf4rj" path="res://examples/showcase/scripts/game.gd" id="1_lc055"]
+[ext_resource type="Script" uid="uid://3mc21nbhnve1" path="res://addons/ss-gameforge-state-machine/scripts/state_machine.gd" id="2_dnswy"]
+[ext_resource type="Script" uid="uid://1e1lpok4icdr" path="res://examples/showcase/scripts/states/boot.gd" id="3_nfyxq"]
+[ext_resource type="Script" uid="uid://hr640k1rmwtt" path="res://examples/showcase/scripts/states/dialogue.gd" id="4_nfyxq"]
+[ext_resource type="Script" uid="uid://dj8rmder8mhob" path="res://examples/showcase/scripts/states/loading.gd" id="5_qdbx1"]
+[ext_resource type="Script" uid="uid://bovhi0abyky1h" path="res://examples/showcase/scripts/states/viewing.gd" id="6_x3x13"]
+[ext_resource type="PackedScene" uid="uid://b8dialogview1" path="res://addons/ss-gameforge-dialogue/scenes/dialogue_view.tscn" id="7_qdbx1"]
+[ext_resource type="Resource" uid="uid://ci257hnoijw5k" path="res://examples/showcase/game_manager_dialogue_theme.tres" id="8_4j0un"]
+[ext_resource type="Resource" uid="uid://ctcit0kmvu3i3" path="res://examples/showcase/game_manager_dialogue_resource.tres" id="9_bq827"]
+[ext_resource type="Script" uid="uid://hlm10c4ry4th" path="res://addons/ss-gameforge-toast/services/toast_service.gd" id="10_go0dj"]
+[ext_resource type="Resource" uid="uid://b38dwukcfyfgc" path="res://examples/showcase/game_manager_toast_theme.tres" id="11_8ux12"]
+
+[node name="GameManager" type="Node"]
+script = ExtResource("1_lc055")
+
+[node name="StateMachine" type="Node" parent="." node_paths=PackedStringArray("default_state")]
+script = ExtResource("2_dnswy")
+default_state = NodePath("BootState")
+metadata/_custom_type_script = "uid://3mc21nbhnve1"
+
+[node name="BootState" type="Node" parent="StateMachine"]
+script = ExtResource("3_nfyxq")
+metadata/_custom_type_script = "uid://1e1lpok4icdr"
+
+[node name="DialogueState" type="Node" parent="StateMachine"]
+script = ExtResource("4_nfyxq")
+metadata/_custom_type_script = "uid://hr640k1rmwtt"
+
+[node name="LoadingState" type="Node" parent="StateMachine"]
+script = ExtResource("5_qdbx1")
+metadata/_custom_type_script = "uid://dj8rmder8mhob"
+
+[node name="ViewingState" type="Node" parent="StateMachine"]
+script = ExtResource("6_x3x13")
+metadata/_custom_type_script = "uid://bovhi0abyky1h"
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="NameLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="NumberLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="SpriteTexture" type="TextureRect" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+
+[node name="DialogueView" parent="VBoxContainer" instance=ExtResource("7_qdbx1")]
+layout_mode = 2
+size_flags_horizontal = 4
+dialogue_theme = ExtResource("8_4j0un")
+resource = ExtResource("9_bq827")
+
+[node name="ToastService" type="Node" parent="."]
+script = ExtResource("10_go0dj")
+theme = ExtResource("11_8ux12")
+metadata/_custom_type_script = "uid://hlm10c4ry4th"

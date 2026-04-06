@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="DialogueResource" load_steps=2 format=3 uid="uid://ctcit0kmvu3i3"]
+
+[ext_resource type="Script" uid="uid://bgja2ug3civcw" path="res://addons/ss-gameforge-dialogue/core/models/dialogue_resource.gd" id="1_46llk"]
+
+[resource]
+script = ExtResource("1_46llk")
+use_translation = false
+text_speed = 0.04
+time_to_start = 0.15
+hold_after_line = 1.2
+open_time = 0.45
+open_transition = 8
+close_time = 0.22
+close_transition = 8
+close_ease = 0
+metadata/_custom_type_script = "uid://bgja2ug3civcw"

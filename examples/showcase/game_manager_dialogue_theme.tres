@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="DialogueTheme" load_steps=2 format=3 uid="uid://ci257hnoijw5k"]
+
+[ext_resource type="Script" uid="uid://djwyryjyi1cx5" path="res://addons/ss-gameforge-dialogue/theme/dialogue_theme.gd" id="1_yq6hh"]
+
+[resource]
+script = ExtResource("1_yq6hh")
+background_color = Color(0.976, 0.969, 0.918, 1)
+border_color = Color(0.094, 0.094, 0.118, 1)
+border_width = 4
+corner_radius = 20.0
+padding = Vector2(24, 18)
+font_color = Color(0.09, 0.1, 0.22, 1)
+font_size = 18
+position_margin = Vector2(32, 32)
+metadata/_custom_type_script = "uid://djwyryjyi1cx5"
