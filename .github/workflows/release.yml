@@ -28,7 +28,7 @@ jobs:
     needs:
       - release
       - release-addons
-    if: needs.release.outputs.releases_created == 'true' && needs.release-addons.result == 'success'
+    if: needs.release.outputs.releases_created == 'true' && needs.release-addons.result == 'success' && needs.release.outputs.release_channel != 'rc'
     uses: slice-soft/ss-pipeline/.github/workflows/run-script-and-pr.yml@v0
     secrets:
       token: ${{ secrets.CROSS_REPO_TOKEN_GAMEFORGE }}
@@ -44,7 +44,7 @@ jobs:
     needs:
       - release
       - release-addons
-    if: needs.release.outputs.releases_created == 'true' && needs.release-addons.result == 'success'
+    if: needs.release.outputs.releases_created == 'true' && needs.release-addons.result == 'success' && needs.release.outputs.release_channel != 'rc'
     uses: slice-soft/ss-pipeline/.github/workflows/run-script-and-pr.yml@v0
     secrets:
       token: ${{ secrets.CROSS_REPO_TOKEN_GAMEFORGE }}
