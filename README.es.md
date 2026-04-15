@@ -25,15 +25,11 @@ GameForge sigue una línea simple:
 
 ## Addons
 
-<!-- ADDONS-TABLE:START -->
-| Addon | Version | Download |
-|-------|---------|----------|
-| `ss-gameforge-dialogue` | [v1.2.0](https://github.com/slice-soft/ss-gameforge-godot/releases/tag/ss-gameforge-dialogue-v1.2.0) | [`ss-gameforge-dialogue-v1.2.0.zip`](https://github.com/slice-soft/ss-gameforge-godot/releases/download/ss-gameforge-dialogue-v1.2.0/ss-gameforge-dialogue-v1.2.0.zip) |
-| `ss-gameforge-singleton` | [v1.0.1](https://github.com/slice-soft/ss-gameforge-godot/releases/tag/ss-gameforge-singleton-v1.0.1) | [`ss-gameforge-singleton-v1.0.1.zip`](https://github.com/slice-soft/ss-gameforge-godot/releases/download/ss-gameforge-singleton-v1.0.1/ss-gameforge-singleton-v1.0.1.zip) |
-| `ss-gameforge-state-machine` | [v1.0.1](https://github.com/slice-soft/ss-gameforge-godot/releases/tag/ss-gameforge-state-machine-v1.0.1) | [`ss-gameforge-state-machine-v1.0.1.zip`](https://github.com/slice-soft/ss-gameforge-godot/releases/download/ss-gameforge-state-machine-v1.0.1/ss-gameforge-state-machine-v1.0.1.zip) |
-| `ss-gameforge-toast` | [v1.1.0](https://github.com/slice-soft/ss-gameforge-godot/releases/tag/ss-gameforge-toast-v1.1.0) | [`ss-gameforge-toast-v1.1.0.zip`](https://github.com/slice-soft/ss-gameforge-godot/releases/download/ss-gameforge-toast-v1.1.0/ss-gameforge-toast-v1.1.0.zip) |
-| `ss-gameforge-wired` | [v1.1.0](https://github.com/slice-soft/ss-gameforge-godot/releases/tag/ss-gameforge-wired-v1.1.0) | [`ss-gameforge-wired-v1.1.0.zip`](https://github.com/slice-soft/ss-gameforge-godot/releases/download/ss-gameforge-wired-v1.1.0/ss-gameforge-wired-v1.1.0.zip) |
-<!-- ADDONS-TABLE:END -->
+- `ss-gameforge-dialogue`
+- `ss-gameforge-singleton`
+- `ss-gameforge-state-machine`
+- `ss-gameforge-toast`
+- `ss-gameforge-wired`
 
 ## Módulos incluidos
 
@@ -109,7 +105,7 @@ Dialogue.choose(0)
 - Los pushes a `release` crean prereleases como `ss-gameforge-toast-v1.2.0-rc.1`.
 - Después de QA, ejecuta el workflow `Promote Release` para abrir el PR de promoción de `release` a `main`.
 - El release estable solo se genera cuando ese promote se mergea en `main`.
-- La tabla del README, la landing y la documentación solo se actualizan desde releases estables en `main`.
+- El listado de addons del README, la landing y la documentación se actualizan manualmente desde releases estables en `main`.
 
 ## Contribuir
 
