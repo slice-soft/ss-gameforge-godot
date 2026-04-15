@@ -102,6 +102,14 @@ Dialogue.choose(0)
 - [ ] Expanded module documentation
 - [ ] Demo scenes
 
+## Release Flow
+
+- Feature work lands in `release` through squash merges.
+- Pushes to `release` create prereleases such as `ss-gameforge-toast-v1.2.0-rc.1`.
+- After QA, run the `Promote Release` workflow to open the promotion PR from `release` to `main`.
+- Stable releases are created only after the `release -> main` promotion is merged.
+- The README table, landing page, and docs are updated only from stable releases on `main`.
+
 ## Contributing
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for setup and repository-specific
