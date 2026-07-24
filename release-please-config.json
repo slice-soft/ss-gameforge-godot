@@ -5,30 +5,35 @@
       "release-type": "simple",
       "component": "ss-gameforge-singleton",
       "changelog-path": "CHANGELOG.md",
+      "extra-files": ["plugin.cfg"],
       "pull-request-title-pattern": "chore(main): release ${version}"
     },
     "addons/ss-gameforge-state-machine": {
       "release-type": "simple",
       "component": "ss-gameforge-state-machine",
       "changelog-path": "CHANGELOG.md",
+      "extra-files": ["plugin.cfg"],
       "pull-request-title-pattern": "chore(main): release ${version}"
     },
     "addons/ss-gameforge-dialogue": {
       "release-type": "simple",
       "component": "ss-gameforge-dialogue",
       "changelog-path": "CHANGELOG.md",
+      "extra-files": ["plugin.cfg"],
       "pull-request-title-pattern": "chore(main): release ${version}"
     },
     "addons/ss-gameforge-toast": {
       "release-type": "simple",
       "component": "ss-gameforge-toast",
       "changelog-path": "CHANGELOG.md",
+      "extra-files": ["plugin.cfg"],
       "pull-request-title-pattern": "chore(main): release ${version}"
     },
     "addons/ss-gameforge-wired": {
       "release-type": "simple",
       "component": "ss-gameforge-wired",
       "changelog-path": "CHANGELOG.md",
+      "extra-files": ["plugin.cfg"],
       "pull-request-title-pattern": "chore(main): release ${version}"
     }
   }
