@@ -1,2 +1,19 @@
 # Normalize EOL for all files that Git considers text files.
 * text=auto eol=lf
+
+# Changelogs are append-mostly: use the built-in `union` merge driver so a
+# promotion (release -> main) never conflicts on changelog content.
+# `union` is a git built-in and is honored by GitHub's server-side merge.
+#
+# A pattern with no slash matches at any depth, so this covers the per-addon
+# changelogs (`addons/*/CHANGELOG.md`) without listing all five.
+#
+# Deliberately NOT applied to `.release-please-manifest*.json`: `union` concatenates
+# both sides' hunks, which on JSON produces duplicate keys and invalid syntax, and
+# would break release-please. Keep this limited to the .md files.
+#
+# CHANGELOG-rc.md is listed for parity with the other Godot repos, but is INERT here:
+# `release-please-config.rc.json` still writes to CHANGELOG.md, so this repo never
+# produces an -rc file. See the note in the gitflow status doc.
+CHANGELOG.md    merge=union
+CHANGELOG-rc.md merge=union
