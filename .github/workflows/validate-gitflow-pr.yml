@@ -5,13 +5,22 @@ on:
     # `edited` is required: editing the PR title does not fire the default
     # types (opened/synchronize/reopened), so a title fix would never re-validate.
     types: [opened, synchronize, reopened, edited]
+    # No `qa` / `staging`: this repo is a library, so there is no deployed
+    # environment to promote through. Work goes feature/* -> release -> main.
     branches:
-      - qa
-      - staging
       - release
       - main
 
 jobs:
   gitflow:
     uses: slice-soft/ss-pipeline/.github/workflows/validate-gitflow-pr.yml@v0
+    with:
+      # Opt out of the qa -> staging -> release promotion chain. Nothing is
+      # deployed here, so the QA step is the release candidate itself: pushes to
+      # `release` publish prereleases (ss-gameforge-toast-v1.2.0-rc.1) that
+      # consumers test in their own project. Leaving the chain on would block the
+      # first feature PR into `release` — and an outside contributor could never
+      # satisfy it, having no push access to `qa`/`staging`.
+      dev_branch: ""
+      qa_branch: ""
     secrets: inherit

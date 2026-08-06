@@ -102,7 +102,8 @@ Dialogue.choose(0)
 
 - Feature work lands in `release` through squash merges.
 - Pushes to `release` create prereleases such as `ss-gameforge-toast-v1.2.0-rc.1`.
-- After QA, run the `Promote Release` workflow to open the promotion PR from `release` to `main`.
+- After QA, open the promotion PR from `release` to `main` and merge it with **rebase**,
+  which keeps one commit per feature on `main`.
 - Stable releases are created only after the `release -> main` promotion is merged.
 - The addons list in the README, landing page, and docs are updated manually from stable releases on `main`.
 
