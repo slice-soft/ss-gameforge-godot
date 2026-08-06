@@ -20,4 +20,3 @@ temp
 examples/**
 !examples/showcase/
 !examples/showcase/**
-docs/**

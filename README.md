@@ -75,10 +75,15 @@ Dialogue.choose(0)
 
 ## Documentation
 
-- [English: SingletonNode](docs/en/singleton-node.md)
-- [English: Toast](docs/en/toast.md)
-- [Español: SingletonNode](docs/es/singleton-node.md)
-- [Español: Toast](docs/es/toast.md)
+Every addon has a reference page in both languages:
+
+| Addon | English | Español |
+|---|---|---|
+| `ss-gameforge-singleton` | [SingletonNode](docs/en/singleton-node.md) | [SingletonNode](docs/es/singleton-node.md) |
+| `ss-gameforge-toast` | [Toast](docs/en/toast.md) | [Toast](docs/es/toast.md) |
+| `ss-gameforge-dialogue` | [Dialogue](docs/en/dialogue.md) | [Dialogue](docs/es/dialogue.md) |
+| `ss-gameforge-state-machine` | [State Machine](docs/en/state-machine.md) | [State Machine](docs/es/state-machine.md) |
+| `ss-gameforge-wired` | [Wired](docs/en/wired.md) | [Wired](docs/es/wired.md) |
 
 ## Getting Started
 
