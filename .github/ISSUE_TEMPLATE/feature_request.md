@@ -22,10 +22,11 @@ Have you considered any alternative solutions or features? Describe them here.
 ## 🧱 Module Affected
 Which GameForge module would this feature belong to?
 - [ ] SingletonNode
-- [ ] EventBus
 - [ ] State Machine (FSM)
 - [ ] Toast UI
 - [ ] Dialogue Manager
+- [ ] Wired (input)
+- [ ] EventBus (planned module)
 - [ ] New Module
 - [ ] Other: ___________
 
