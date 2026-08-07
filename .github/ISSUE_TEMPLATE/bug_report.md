@@ -25,10 +25,10 @@ What actually happened instead.
 If applicable, add screenshots to help explain your problem.
 
 ## 🔧 Environment
-- **Godot Version**: [e.g., 4.2.1]
-- **GameForge Version**: [e.g., 1.0.0]
+- **Godot Version**: [e.g., 4.5]
+- **GameForge Version**: [e.g., 1.1.0]
 - **OS**: [e.g., Windows 11, macOS 14, Linux Ubuntu 22.04]
-- **Module(s) affected**: [e.g., SingletonNode, EventBus]
+- **Module(s) affected**: [e.g., SingletonNode, Toast UI]
 
 ## 📝 Additional Context
 Add any other context about the problem here.

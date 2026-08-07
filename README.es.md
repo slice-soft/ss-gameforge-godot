@@ -41,6 +41,48 @@ SaveService.i.save_game()
 BossFightDirector.i.next_phase()
 ```
 
+### State Machine
+Utilidades FSM orientadas a gameplay para personajes, enemigos, UI y flujos.
+Los estados son nodos hijos, y la máquina solo reenvía los callbacks que cada uno define.
+
+```gdscript
+state_machine.change_to("Running")
+```
+
+### Toast UI
+Helpers de feedback visual con cola, animaciones y soporte de temas.
+
+```gdscript
+ToastService.i.info("Guardado")
+ToastService.i.success("Nivel completado")
+ToastService.i.danger("Error al cargar")
+```
+
+### Dialogue Manager
+Orquestación de diálogos desacoplada de la presentación. Las líneas viven en un
+`DialogueResource`, así que escribir contenido nunca implica tocar la vista.
+
+```gdscript
+dialogue_view.play(resource)
+```
+
+> Etapa temprana: las líneas se reproducen en secuencia, con efecto máquina de
+> escribir y soporte de BBCode. Las ramificaciones y opciones todavía no están.
+
+### Wired
+Entrada basada en acciones: el gameplay pide `"jump"`, nunca `KEY_SPACE`. Soporta
+bindings por jugador, remapeo en runtime, cooperativo local y gamepads en caliente.
+
+```gdscript
+if GWInputManager.i.is_action_just_pressed("jump"):
+	saltar()
+```
+
+## Módulos planeados
+
+Todavía no se entregan. Están listados para que la dirección sea visible — no
+programes contra esto.
+
 ### EventBus
 Comunicación desacoplada entre sistemas sin referencias fuertes.
 
@@ -51,26 +93,6 @@ EventBus.on(self, {
 })
 
 EventBus.emit("player_died", player_id)
-```
-
-### State Machine
-Utilidades FSM orientadas a gameplay para personajes, enemigos, UI y flujos.
-
-### Toast UI
-Helpers de feedback visual con cola, animaciones y soporte de temas.
-
-```gdscript
-Toast.show("Guardado")
-Toast.warn("Sin conexión")
-Toast.error("Error al cargar")
-```
-
-### Dialogue Manager
-Orquestación de diálogos desacoplada de la presentación.
-
-```gdscript
-Dialogue.play("intro")
-Dialogue.choose(0)
 ```
 
 ## Documentación
@@ -91,10 +113,9 @@ Cada addon tiene su página de referencia en ambos idiomas:
 2. Activa el plugin desde `Project Settings -> Plugins`.
 3. Instala los autoloads requeridos desde el panel del plugin si el módulo lo necesita.
 
-> Nota de naming: la identidad pública del repositorio y el path interno del
-> addon en Godot ahora quedan alineados como `ss-gameforge-godot` y
-> `addons/ss-gameforge-godot/`. Usa ese path al copiar el addon a proyectos
-> reales.
+> Cada módulo es su propio directorio de addon — `addons/ss-gameforge-toast/`,
+> `addons/ss-gameforge-wired/`, y así. Copia solo los que necesites, más
+> `ss-gameforge-singleton`: Toast y Wired extienden `SingletonNode`.
 
 ## Roadmap
 

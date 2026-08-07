@@ -21,10 +21,11 @@ Closes #(issue)
 
 ## Area
 - [ ] SingletonNode
-- [ ] EventBus
 - [ ] State Machine
 - [ ] Toast UI
 - [ ] Dialogue Manager
+- [ ] Wired
+- [ ] EventBus (planned module)
 - [ ] Core or plugin
 - [ ] Documentation
 - [ ] Other
