@@ -16,3 +16,4 @@ var current_pokemon_texture: ImageTexture = null
 func _enter_tree() -> void:
 	SingletonNode.ensure_for(ToastService, get_tree().root, "ToastService")
 	SingletonNode.ensure_for(GWInputManager, get_tree().root, "GWInputManager")
+	SingletonNode.ensure_for(ShowcaseEvents, get_tree().root, "ShowcaseEvents")
