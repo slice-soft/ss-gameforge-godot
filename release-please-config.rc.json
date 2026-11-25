@@ -1,42 +1,55 @@
 {
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
-  "prerelease": true,
-  "prerelease-type": "rc",
   "packages": {
     "addons/ss-gameforge-singleton": {
       "release-type": "simple",
       "component": "ss-gameforge-singleton",
-      "changelog-path": "CHANGELOG.md",
+      "changelog-path": "CHANGELOG-rc.md",
       "extra-files": ["plugin.cfg"],
-      "pull-request-title-pattern": "chore(release): release ${version}"
+      "pull-request-title-pattern": "chore(release): release ${version}",
+      "versioning": "prerelease",
+      "prerelease": true,
+      "prerelease-type": "rc"
     },
     "addons/ss-gameforge-state-machine": {
       "release-type": "simple",
       "component": "ss-gameforge-state-machine",
-      "changelog-path": "CHANGELOG.md",
+      "changelog-path": "CHANGELOG-rc.md",
       "extra-files": ["plugin.cfg"],
-      "pull-request-title-pattern": "chore(release): release ${version}"
+      "pull-request-title-pattern": "chore(release): release ${version}",
+      "versioning": "prerelease",
+      "prerelease": true,
+      "prerelease-type": "rc"
     },
     "addons/ss-gameforge-dialogue": {
       "release-type": "simple",
       "component": "ss-gameforge-dialogue",
-      "changelog-path": "CHANGELOG.md",
+      "changelog-path": "CHANGELOG-rc.md",
       "extra-files": ["plugin.cfg"],
-      "pull-request-title-pattern": "chore(release): release ${version}"
+      "pull-request-title-pattern": "chore(release): release ${version}",
+      "versioning": "prerelease",
+      "prerelease": true,
+      "prerelease-type": "rc"
     },
     "addons/ss-gameforge-toast": {
       "release-type": "simple",
       "component": "ss-gameforge-toast",
-      "changelog-path": "CHANGELOG.md",
+      "changelog-path": "CHANGELOG-rc.md",
       "extra-files": ["plugin.cfg"],
-      "pull-request-title-pattern": "chore(release): release ${version}"
+      "pull-request-title-pattern": "chore(release): release ${version}",
+      "versioning": "prerelease",
+      "prerelease": true,
+      "prerelease-type": "rc"
     },
     "addons/ss-gameforge-wired": {
       "release-type": "simple",
       "component": "ss-gameforge-wired",
-      "changelog-path": "CHANGELOG.md",
+      "changelog-path": "CHANGELOG-rc.md",
       "extra-files": ["plugin.cfg"],
-      "pull-request-title-pattern": "chore(release): release ${version}"
+      "pull-request-title-pattern": "chore(release): release ${version}",
+      "versioning": "prerelease",
+      "prerelease": true,
+      "prerelease-type": "rc"
     }
   }
 }
