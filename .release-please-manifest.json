@@ -4,5 +4,5 @@
   "addons/ss-gameforge-dialogue": "1.2.0",
   "addons/ss-gameforge-toast": "1.1.0",
   "addons/ss-gameforge-wired": "1.1.0",
-  "addons/ss-gameforge-event-bus": "0.0.0"
+  "addons/ss-gameforge-event-bus": "0.1.0"
 }
