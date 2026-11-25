@@ -12,8 +12,7 @@
 # both sides' hunks, which on JSON produces duplicate keys and invalid syntax, and
 # would break release-please. Keep this limited to the .md files.
 #
-# CHANGELOG-rc.md is listed for parity with the other Godot repos, but is INERT here:
-# `release-please-config.rc.json` still writes to CHANGELOG.md, so this repo never
-# produces an -rc file. See the note in the gitflow status doc.
+# The rc channel (release branch) writes to CHANGELOG-rc.md, so prerelease notes
+# never mix into the stable CHANGELOG.md.
 CHANGELOG.md    merge=union
 CHANGELOG-rc.md merge=union
