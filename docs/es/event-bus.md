@@ -88,6 +88,8 @@ Solo se trazan las señales que declara tu subclase. Los builds de release nunca
 - **Escuchar desde un nodo fuera del árbol** imprime una advertencia. Sus conexiones solo
   se eliminan al salir del árbol o con `unlisten()`. Si se libera sin haber entrado nunca
   al árbol, Godot quita solo las conexiones a sus propios métodos; una lambda o un método
-  de otro objeto sigue recibiendo eventos hasta `unlisten()`.
+  de otro objeto sigue recibiendo eventos hasta la siguiente llamada a `listen()` o
+  `unlisten()` en ese bus, que la limpia. Llama a `unlisten(nodo)` antes de liberar un
+  nodo que nunca entró al árbol.
 - **Varios buses están bien.** Cada subclase (`GameEvents`, `UIEvents`, ...) tiene su
   propia instancia.

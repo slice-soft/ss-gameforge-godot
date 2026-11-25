@@ -59,8 +59,7 @@
       "pull-request-title-pattern": "chore(release): release ${version}",
       "versioning": "prerelease",
       "prerelease": true,
-      "prerelease-type": "rc",
-      "initial-version": "0.1.0"
+      "prerelease-type": "rc"
     }
   }
 }

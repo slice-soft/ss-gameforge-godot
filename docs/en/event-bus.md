@@ -88,6 +88,7 @@ Only the signals your subclass declares are traced. Release builds never print.
 - **Listening from a node outside the tree** prints a warning. Its bindings are
   removed only on tree exit or `unlisten()`. If it is freed without ever entering the
   tree, Godot drops bindings to its own methods automatically, but a lambda or another
-  object's method keeps firing until `unlisten()`.
+  object's method keeps firing until the next `listen()` or `unlisten()` call on that
+  bus cleans it up. Call `unlisten(node)` before freeing a node that never entered the tree.
 - **Several buses are fine.** Each subclass (`GameEvents`, `UIEvents`, ...) has its own
   instance.

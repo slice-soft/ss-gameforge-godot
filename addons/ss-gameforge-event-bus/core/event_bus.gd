@@ -40,31 +40,51 @@ func listen(owner: Node, bindings: Dictionary) -> void:
 		owner.tree_exiting.connect(hook, CONNECT_ONE_SHOT)
 	var entry: Dictionary = _registry[id]
 	for sig in bindings:
-		var cb: Callable = bindings[sig]
-		if (sig as Signal).is_connected(cb):
+		var pair := [sig, bindings[sig]]
+		if _owns(entry, pair):
 			continue
-		(sig as Signal).connect(cb)
-		entry["bindings"].append([sig, cb])
+		if not (sig as Signal).is_connected(pair[1]):
+			(sig as Signal).connect(pair[1])
+		entry["bindings"].append(pair)
 
 
 ## Disconnects everything `owner` registered through `listen()`.
 func unlisten(owner: Node) -> void:
+	_prune()
 	var id := owner.get_instance_id()
 	if not _registry.has(id):
 		return
 	var entry: Dictionary = _registry[id]
-	_disconnect_bindings(entry)
+	_disconnect_bindings(id)
 	if owner.tree_exiting.is_connected(entry["hook"]):
 		owner.tree_exiting.disconnect(entry["hook"])
 	_registry.erase(id)
 
 
-func _disconnect_bindings(entry: Dictionary) -> void:
-	for pair in entry["bindings"]:
+# Disconnects the entry's pairs, except those another owner still holds: the same
+# Callable on the same Signal is a single Godot connection shared by every owner.
+func _disconnect_bindings(id: int) -> void:
+	for pair in _registry[id]["bindings"]:
+		if _held_elsewhere(id, pair):
+			continue
 		var sig: Signal = pair[0]
 		var cb: Callable = pair[1]
 		if sig.is_connected(cb):
 			sig.disconnect(cb)
+
+
+func _owns(entry: Dictionary, pair: Array) -> bool:
+	for p in entry["bindings"]:
+		if p[0] == pair[0] and p[1] == pair[1]:
+			return true
+	return false
+
+
+func _held_elsewhere(id: int, pair: Array) -> bool:
+	for other_id in _registry:
+		if other_id != id and _owns(_registry[other_id], pair):
+			return true
+	return false
 
 
 # Drops entries whose owner was freed without leaving the tree (e.g. never added).
@@ -72,7 +92,7 @@ func _prune() -> void:
 	for id in _registry.keys():
 		var entry: Dictionary = _registry[id]
 		if (entry["owner"] as WeakRef).get_ref() == null:
-			_disconnect_bindings(entry)
+			_disconnect_bindings(id)
 			_registry.erase(id)
 
 

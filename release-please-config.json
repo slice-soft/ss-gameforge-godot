@@ -41,8 +41,7 @@
       "component": "ss-gameforge-event-bus",
       "changelog-path": "CHANGELOG.md",
       "extra-files": ["plugin.cfg"],
-      "pull-request-title-pattern": "chore(main): release ${version}",
-      "initial-version": "0.1.0"
+      "pull-request-title-pattern": "chore(main): release ${version}"
     }
   }
 }

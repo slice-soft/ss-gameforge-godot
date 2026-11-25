@@ -99,7 +99,7 @@ Cada addon tiene su página de referencia en ambos idiomas:
 | `ss-gameforge-dialogue` | [Dialogue](docs/es/dialogue.md) | [Dialogue](docs/en/dialogue.md) |
 | `ss-gameforge-state-machine` | [State Machine](docs/es/state-machine.md) | [State Machine](docs/en/state-machine.md) |
 | `ss-gameforge-wired` | [Wired](docs/es/wired.md) | [Wired](docs/en/wired.md) |
-| `ss-gameforge-event-bus` | [Event Bus](docs/en/event-bus.md) | [Event Bus](docs/es/event-bus.md) |
+| `ss-gameforge-event-bus` | [Event Bus](docs/es/event-bus.md) | [Event Bus](docs/en/event-bus.md) |
 
 ## Primeros pasos
 
