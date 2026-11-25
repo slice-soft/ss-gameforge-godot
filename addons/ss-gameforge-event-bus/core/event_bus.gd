@@ -13,8 +13,14 @@ class_name EventBus
 ## Emit with the native API (`GameEvents.i.player_died.emit(1)`) and subscribe with
 ## `listen()`, which disconnects automatically when the owner leaves the tree.
 
-## Prints every emission of the subclass's signals (debug builds only).
-var trace: bool = false
+## Prints every emission of the subclass's signals, one line each (debug builds only).
+var trace: bool = false:
+	set(value):
+		trace = value
+		_update_trace_hooks()
+
+# signal name -> logger Callable connected while trace is on
+var _trace_hooks: Dictionary = {}
 
 # owner instance id -> { "owner": WeakRef, "bindings": Array[[Signal, Callable]], "hook": Callable }
 var _registry: Dictionary = {}
@@ -68,3 +74,30 @@ func _prune() -> void:
 		if (entry["owner"] as WeakRef).get_ref() == null:
 			_disconnect_bindings(entry)
 			_registry.erase(id)
+
+
+func _update_trace_hooks() -> void:
+	var enable := trace and OS.is_debug_build()
+	if enable:
+		for info in get_script().get_script_signal_list():
+			var signal_name: StringName = info["name"]
+			if _trace_hooks.has(signal_name):
+				continue
+			var hook := _on_traced.bind(signal_name)
+			connect(signal_name, hook)
+			_trace_hooks[signal_name] = hook
+	else:
+		for signal_name in _trace_hooks:
+			if is_connected(signal_name, _trace_hooks[signal_name]):
+				disconnect(signal_name, _trace_hooks[signal_name])
+		_trace_hooks.clear()
+
+
+# Bound with the signal name, which arrives as the last argument.
+func _on_traced(...args: Array) -> void:
+	var signal_name: StringName = args.pop_back()
+	print(_format_trace(signal_name, args))
+
+
+func _format_trace(signal_name: StringName, args: Array) -> String:
+	return "[EventBus] %s(%s)" % [signal_name, ", ".join(args.map(func(a): return str(a)))]
