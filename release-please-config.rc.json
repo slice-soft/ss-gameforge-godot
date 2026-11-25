@@ -50,6 +50,17 @@
       "versioning": "prerelease",
       "prerelease": true,
       "prerelease-type": "rc"
+    },
+    "addons/ss-gameforge-event-bus": {
+      "release-type": "simple",
+      "component": "ss-gameforge-event-bus",
+      "changelog-path": "CHANGELOG-rc.md",
+      "extra-files": ["plugin.cfg"],
+      "pull-request-title-pattern": "chore(release): release ${version}",
+      "versioning": "prerelease",
+      "prerelease": true,
+      "prerelease-type": "rc",
+      "initial-version": "0.1.0-rc.1"
     }
   }
 }

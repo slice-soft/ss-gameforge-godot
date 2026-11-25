@@ -26,7 +26,7 @@ func _fetch_pokemon() -> void:
 
 func _on_pokemon_completed(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
 	if result != HTTPRequest.RESULT_SUCCESS or response_code != 200:
-		ToastService.i.danger("Error al cargar el Pokémon")
+		ShowcaseEvents.i.pokemon_load_failed.emit("Error al cargar el Pokémon")
 		return
 
 	var json := JSON.new()
@@ -62,7 +62,7 @@ func _fetch_species() -> void:
 
 func _on_species_completed(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
 	if result != HTTPRequest.RESULT_SUCCESS or response_code != 200:
-		ToastService.i.danger("Error al cargar especie")
+		ShowcaseEvents.i.pokemon_load_failed.emit("Error al cargar especie")
 		return
 
 	var json := JSON.new()
@@ -102,7 +102,7 @@ func _try_finish() -> void:
 	if not (_sprite_done and _species_done):
 		return
 	_loading_done.emit()
-	ToastService.i.success("%s cargado" % game_manager.current_pokemon_name)
+	ShowcaseEvents.i.pokemon_loaded.emit(game_manager.current_pokemon_name)
 	state_machine.change_to(GameManagerStates.Viewing)
 
 func _create_http() -> HTTPRequest:

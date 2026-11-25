@@ -26,6 +26,7 @@ GameForge sigue una línea simple:
 ## Addons
 
 - `ss-gameforge-dialogue`
+- `ss-gameforge-event-bus`
 - `ss-gameforge-singleton`
 - `ss-gameforge-state-machine`
 - `ss-gameforge-toast`
@@ -78,21 +79,13 @@ if GWInputManager.i.is_action_just_pressed("jump"):
 	saltar()
 ```
 
-## Módulos planeados
-
-Todavía no se entregan. Están listados para que la dirección sea visible — no
-programes contra esto.
-
-### EventBus
-Comunicación desacoplada entre sistemas sin referencias fuertes.
+### Event Bus
+Eventos tipados por juego: cada juego extiende `EventBus` con sus propias señales, y
+los listeners se desconectan solos cuando salen del árbol de escena.
 
 ```gdscript
-EventBus.on(self, {
-  "player_died": "_on_player_died",
-  "health_changed": "_on_health_changed",
-})
-
-EventBus.emit("player_died", player_id)
+GameEvents.i.player_died.emit(player_id)
+GameEvents.i.listen(self, {GameEvents.i.player_died: _on_player_died})
 ```
 
 ## Documentación
@@ -106,6 +99,7 @@ Cada addon tiene su página de referencia en ambos idiomas:
 | `ss-gameforge-dialogue` | [Dialogue](docs/es/dialogue.md) | [Dialogue](docs/en/dialogue.md) |
 | `ss-gameforge-state-machine` | [State Machine](docs/es/state-machine.md) | [State Machine](docs/en/state-machine.md) |
 | `ss-gameforge-wired` | [Wired](docs/es/wired.md) | [Wired](docs/en/wired.md) |
+| `ss-gameforge-event-bus` | [Event Bus](docs/es/event-bus.md) | [Event Bus](docs/en/event-bus.md) |
 
 ## Primeros pasos
 
@@ -115,7 +109,7 @@ Cada addon tiene su página de referencia en ambos idiomas:
 
 > Cada módulo es su propio directorio de addon — `addons/ss-gameforge-toast/`,
 > `addons/ss-gameforge-wired/`, y así. Copia solo los que necesites, más
-> `ss-gameforge-singleton`: Toast y Wired extienden `SingletonNode`.
+> `ss-gameforge-singleton`: Toast, Wired y Event Bus extienden `SingletonNode`.
 
 ## Roadmap
 
@@ -127,12 +121,18 @@ Cada addon tiene su página de referencia en ambos idiomas:
 
 ## Flujo de release
 
-- Los features llegan a `release` mediante squash merge.
-- Los pushes a `release` crean prereleases como `ss-gameforge-toast-v1.2.0-rc.1`.
-- Después de QA, abre el PR de promoción de `release` a `main` y mergéalo con **rebase**,
-  que conserva un commit por feature en `main`.
-- El release estable solo se genera cuando ese promote se mergea en `main`.
-- El listado de addons del README, la landing y la documentación se actualizan manualmente desde releases estables en `main`.
+- Los features (`feature/<issue>-desc`, `fix/<issue>-desc`, ...) llegan a `release` mediante
+  squash merge. Los títulos de PR siguen Conventional Commits y terminan en `(#<issue>)`.
+- release-please abre un PR rc en `release`. Al mergearlo se publican prereleases como
+  `ss-gameforge-toast-v1.2.0-rc.1`.
+- Después de QA, abre el PR de promoción de `release` a `main` y mergéalo con
+  **merge commit** (el único método que `main` permite). Así `release` sigue siendo
+  ancestro de `main` y las ramas no divergen.
+- Luego release-please abre el PR de release estable en `main`. Al mergearlo se publican
+  los releases estables y el pipeline abre los PRs de actualización de versiones en los
+  repos de la landing y la documentación.
+- Por último, haz fast-forward de `release` a `main` para que el siguiente ciclo parta
+  del estado estable.
 
 ## Contribuir
 
