@@ -26,6 +26,7 @@ GameForge is built around a few simple principles:
 ## Addons
 
 - `ss-gameforge-dialogue`
+- `ss-gameforge-event-bus`
 - `ss-gameforge-singleton`
 - `ss-gameforge-state-machine`
 - `ss-gameforge-toast`
@@ -78,20 +79,13 @@ if GWInputManager.i.is_action_just_pressed("jump"):
 	jump()
 ```
 
-## Planned Modules
-
-Not shipped yet. Listed so the direction is visible — do not code against these.
-
-### EventBus
-Decoupled communication between systems without hard references.
+### Event Bus
+Typed, per-game events: each game extends `EventBus` with its own signals, and
+listeners disconnect automatically when they leave the scene tree.
 
 ```gdscript
-EventBus.on(self, {
-  "player_died": "_on_player_died",
-  "health_changed": "_on_health_changed",
-})
-
-EventBus.emit("player_died", player_id)
+GameEvents.i.player_died.emit(player_id)
+GameEvents.i.listen(self, {GameEvents.i.player_died: _on_player_died})
 ```
 
 ## Documentation
@@ -105,6 +99,7 @@ Every addon has a reference page in both languages:
 | `ss-gameforge-dialogue` | [Dialogue](docs/en/dialogue.md) | [Dialogue](docs/es/dialogue.md) |
 | `ss-gameforge-state-machine` | [State Machine](docs/en/state-machine.md) | [State Machine](docs/es/state-machine.md) |
 | `ss-gameforge-wired` | [Wired](docs/en/wired.md) | [Wired](docs/es/wired.md) |
+| `ss-gameforge-event-bus` | [Event Bus](docs/en/event-bus.md) | [Event Bus](docs/es/event-bus.md) |
 
 ## Getting Started
 
@@ -114,7 +109,7 @@ Every addon has a reference page in both languages:
 
 > Each module is its own addon directory — `addons/ss-gameforge-toast/`,
 > `addons/ss-gameforge-wired/`, and so on. Copy only the ones you need, plus
-> `ss-gameforge-singleton`: Toast and Wired both extend `SingletonNode`.
+> `ss-gameforge-singleton`: Toast, Wired and Event Bus extend `SingletonNode`.
 
 ## Roadmap
 
