@@ -127,7 +127,7 @@ Cada addon tiene su página de referencia en ambos idiomas:
 
 ## Flujo de release
 
-- Los features (`feat/<issue>-desc`, `fix/<issue>-desc`, ...) llegan a `release` mediante
+- Los features (`feature/<issue>-desc`, `fix/<issue>-desc`, ...) llegan a `release` mediante
   squash merge. Los títulos de PR siguen Conventional Commits y terminan en `(#<issue>)`.
 - release-please abre un PR rc en `release`. Al mergearlo se publican prereleases como
   `ss-gameforge-toast-v1.2.0-rc.1`.

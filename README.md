@@ -126,7 +126,7 @@ Every addon has a reference page in both languages:
 
 ## Release Flow
 
-- Feature work (`feat/<issue>-desc`, `fix/<issue>-desc`, ...) lands in `release` through
+- Feature work (`feature/<issue>-desc`, `fix/<issue>-desc`, ...) lands in `release` through
   squash merges. PR titles are Conventional Commits ending in `(#<issue>)`.
 - release-please opens an rc PR on `release`. Merging it publishes prereleases such as
   `ss-gameforge-toast-v1.2.0-rc.1`.
