@@ -126,12 +126,17 @@ Every addon has a reference page in both languages:
 
 ## Release Flow
 
-- Feature work lands in `release` through squash merges.
-- Pushes to `release` create prereleases such as `ss-gameforge-toast-v1.2.0-rc.1`.
-- After QA, open the promotion PR from `release` to `main` and merge it with **rebase**,
-  which keeps one commit per feature on `main`.
-- Stable releases are created only after the `release -> main` promotion is merged.
-- The addons list in the README, landing page, and docs are updated manually from stable releases on `main`.
+- Feature work (`feature/<issue>-desc`, `fix/<issue>-desc`, ...) lands in `release` through
+  squash merges. PR titles are Conventional Commits ending in `(#<issue>)`.
+- release-please opens an rc PR on `release`. Merging it publishes prereleases such as
+  `ss-gameforge-toast-v1.2.0-rc.1`.
+- After QA, open the promotion PR from `release` to `main` and merge it with a
+  **merge commit** (the only method `main` allows). That keeps `release` an ancestor
+  of `main`, so the two branches never diverge.
+- release-please then opens the stable release PR on `main`. Merging it publishes the
+  stable releases, and the pipeline opens the version-update PRs on the landing page
+  and docs repos.
+- Finally, fast-forward `release` to `main` so the next cycle starts from the stable state.
 
 ## Contributing
 
