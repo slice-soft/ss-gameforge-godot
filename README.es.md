@@ -127,12 +127,18 @@ Cada addon tiene su página de referencia en ambos idiomas:
 
 ## Flujo de release
 
-- Los features llegan a `release` mediante squash merge.
-- Los pushes a `release` crean prereleases como `ss-gameforge-toast-v1.2.0-rc.1`.
-- Después de QA, abre el PR de promoción de `release` a `main` y mergéalo con **rebase**,
-  que conserva un commit por feature en `main`.
-- El release estable solo se genera cuando ese promote se mergea en `main`.
-- El listado de addons del README, la landing y la documentación se actualizan manualmente desde releases estables en `main`.
+- Los features (`feat/<issue>-desc`, `fix/<issue>-desc`, ...) llegan a `release` mediante
+  squash merge. Los títulos de PR siguen Conventional Commits y terminan en `(#<issue>)`.
+- release-please abre un PR rc en `release`. Al mergearlo se publican prereleases como
+  `ss-gameforge-toast-v1.2.0-rc.1`.
+- Después de QA, abre el PR de promoción de `release` a `main` y mergéalo con
+  **merge commit** (el único método que `main` permite). Así `release` sigue siendo
+  ancestro de `main` y las ramas no divergen.
+- Luego release-please abre el PR de release estable en `main`. Al mergearlo se publican
+  los releases estables y el pipeline abre los PRs de actualización de versiones en los
+  repos de la landing y la documentación.
+- Por último, haz fast-forward de `release` a `main` para que el siguiente ciclo parta
+  del estado estable.
 
 ## Contribuir
 
