@@ -46,16 +46,21 @@ func add_binding(binding: GWBinding) -> bool:
 
 
 ## Sets or replaces the binding at the given slot index.
-## If index equals the current size and capacity allows, the binding is appended instead.
-func set_binding(index: int, binding: GWBinding) -> void:
+## An index at or past the end appends, if max_bindings allows.
+## With negative = true it writes the negative side of an AXIS action.
+## Returns false if the binding could not be stored.
+func set_binding(index: int, binding: GWBinding, negative: bool = false) -> bool:
 	if index < 0:
-		return
-	if index < bindings.size():
-		bindings[index] = binding
-		binding_added.emit(binding)
-	elif max_bindings == 0 or bindings.size() < max_bindings:
-		bindings.append(binding)
-		binding_added.emit(binding)
+		return false
+	var list := negative_bindings if negative else bindings
+	if index < list.size():
+		list[index] = binding
+	elif max_bindings == 0 or list.size() < max_bindings:
+		list.append(binding)
+	else:
+		return false
+	binding_added.emit(binding)
+	return true
 
 
 ## Removes the binding at the given slot index.

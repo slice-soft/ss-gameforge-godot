@@ -170,7 +170,9 @@ pad que se desconecta vuelve al mismo jugador cuando se reconecta.
 ## Uso: remapear en tiempo de ejecución
 
 El remapeo es un modo de escucha: el manager captura la siguiente entrada válida
-y la escribe en el slot que nombraste.
+de un dispositivo **que pertenece al jugador** y la escribe en el slot que
+nombraste. La entrada de dispositivos de otros jugadores se ignora, así que P1
+no puede remapear con el pad de P2.
 
 ```gdscript
 func _on_boton_remapear(action_name: String) -> void:
@@ -186,14 +188,38 @@ func _on_remapped(player_id: int, action_name: String) -> void:
 ```
 
 `binding_index` es qué slot sobrescribir — `0` es el binding principal, `1` la
-primera alternativa, y así.
+primera alternativa, y así. Un slot más allá de `max_bindings` no se puede
+llenar: el remapeo se cancela y se emite `rebind_cancelled` en lugar de
+`binding_remapped`.
 
-Mientras escucha, `is_listening_for_rebind()` devuelve true. Úsalo para pausar el
-gameplay; si no, la tecla que se está capturando también dispara aquello a lo que
-está asignada hoy. `cancel_rebind_listen()` aborta y emite `rebind_cancelled`.
+`start_rebind_listen()` devuelve `false` y no escucha cuando el jugador o la
+acción no existen, o la acción tiene `allow_rebind = false`.
 
-> Las acciones con `allow_rebind` en false están pensadas para quedarse fijas;
-> déjalas fuera de la pantalla de remapeo.
+Mientras escucha, `is_listening_for_rebind()` devuelve true y las consultas de
+gameplay no reciben entrada, así que la tecla que se está capturando no dispara
+también aquello a lo que está asignada hoy. `cancel_rebind_listen()` aborta y
+emite `rebind_cancelled`.
+
+Los bindings de gamepad capturados se guardan con `device_id = -1`, es decir
+"cualquier pad de este jugador", así que siguen funcionando tras una reconexión
+o en otra máquina.
+
+Para remapear el lado negativo de una acción de eje, pasa `negative = true`:
+
+```gdscript
+GWInputManager.i.start_rebind_listen(0, "steer", 0, true)   # "girar a la izquierda"
+```
+
+Si la nueva entrada ya está asignada a otras acciones del mismo jugador, el
+remapeo se mantiene y se emite
+`rebind_conflict(player_id, action_name, conflicting_actions)` para que la
+pantalla avise o intercambie:
+
+```gdscript
+GWInputManager.i.rebind_conflict.connect(func(pid, action, others):
+	warning.text = "%s también lo usa %s" % [action, ", ".join(others)]
+)
+```
 
 ## Uso: guardar los bindings
 

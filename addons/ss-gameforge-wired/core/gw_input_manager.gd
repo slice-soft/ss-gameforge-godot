@@ -16,6 +16,9 @@ signal device_disconnected(device_id: int)
 signal binding_remapped(player_id: int, action_name: String)
 signal rebind_listening(player_id: int, action_name: String, binding_index: int)
 signal rebind_cancelled(player_id: int)
+## Emitted after a rebind when the new input is also bound to other actions of
+## the same player. The rebind is kept; the game decides whether to swap or warn.
+signal rebind_conflict(player_id: int, action_name: String, conflicting_actions: Array[String])
 ## Emitted when an unassigned device produces a press. Use this to drive "press to join" logic.
 signal unassigned_device_pressed(device_id: int)
 
@@ -244,16 +247,29 @@ func get_vector(neg_x: String, pos_x: String, neg_y: String, pos_y: String, play
 
 # --- Rebinding API ---
 
-## Enters listen mode: the next valid InputEvent becomes the new binding.
-## While listening, is_listening_for_rebind() returns true — use it to pause gameplay.
-func start_rebind_listen(player_id: int, action_name: String, binding_index: int = 0) -> void:
+## Enters listen mode: the next input from a device the player owns becomes the
+## new binding. Set negative = true to capture the negative side of an AXIS action.
+## Returns false (and does not listen) if the player or action does not exist or
+## the action has allow_rebind = false.
+## While listening, is_listening_for_rebind() returns true — gameplay queries
+## receive no input until the rebind ends.
+func start_rebind_listen(player_id: int, action_name: String, binding_index: int = 0, negative: bool = false) -> bool:
+	var player := get_player(player_id)
+	if player == null or not player.actions.has(action_name):
+		push_warning("[GWInputManager] Cannot rebind '%s' for player %d: not found." % [action_name, player_id])
+		return false
+	if not (player.actions[action_name] as GWAction).allow_rebind:
+		push_warning("[GWInputManager] Action '%s' does not allow rebinding." % action_name)
+		return false
 	_rebind_ctx = {
 		"player_id": player_id,
 		"action_name": action_name,
 		"binding_index": binding_index,
+		"negative": negative,
 		"listening": true,
 	}
 	rebind_listening.emit(player_id, action_name, binding_index)
+	return true
 
 
 ## Cancels an active listen mode without applying any binding.
@@ -261,7 +277,7 @@ func cancel_rebind_listen() -> void:
 	if not _rebind_ctx.get("listening", false):
 		return
 	var pid: int = _rebind_ctx.get("player_id", 0)
-	_rebind_ctx = {}
+	_end_rebind()
 	rebind_cancelled.emit(pid)
 
 
@@ -449,7 +465,23 @@ func _process_rebind_input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 			return
 
-	# Build the new binding from the first valid event.
+	var pid: int = _rebind_ctx["player_id"]
+	var action_name: String = _rebind_ctx["action_name"]
+	var binding_index: int = _rebind_ctx["binding_index"]
+	var negative: bool = _rebind_ctx.get("negative", false)
+	var player := get_player(pid)
+	if player == null:
+		cancel_rebind_listen()
+		return
+
+	# Only the rebinding player's own devices can provide the new input.
+	var dev_id := _get_event_device_id(event)
+	if dev_id == -99 or not player.owns_device(dev_id):
+		return
+
+	# Build the new binding from the first valid event. Pad bindings are stored
+	# with device_id = -1 ("any pad this player owns") so they survive
+	# reconnects and other machines.
 	var new_binding: GWBinding = null
 
 	if event is InputEventKey:
@@ -463,24 +495,34 @@ func _process_rebind_input(event: InputEvent) -> void:
 	elif event is InputEventJoypadButton:
 		var ev := event as InputEventJoypadButton
 		if ev.is_pressed():
-			new_binding = GWBinding.from_joy_button(ev.button_index, ev.device)
+			new_binding = GWBinding.from_joy_button(ev.button_index)
 	elif event is InputEventJoypadMotion:
 		var ev := event as InputEventJoypadMotion
 		if absf(ev.axis_value) > 0.5:
 			var dir := 1.0 if ev.axis_value > 0.0 else -1.0
-			new_binding = GWBinding.from_joy_axis(ev.axis, dir, ev.device)
+			new_binding = GWBinding.from_joy_axis(ev.axis, dir)
 
 	if new_binding == null:
 		return
 
-	var pid: int = _rebind_ctx["player_id"]
-	var action_name: String = _rebind_ctx["action_name"]
-	var binding_index: int = _rebind_ctx["binding_index"]
-
-	var player := get_player(pid)
-	if player != null:
-		player.set_binding(action_name, binding_index, new_binding)
-		binding_remapped.emit(pid, action_name)
-
-	_rebind_ctx = {}
 	get_viewport().set_input_as_handled()
+	if not player.set_binding(action_name, binding_index, new_binding, negative):
+		push_warning("[GWInputManager] Slot %d of '%s' cannot be filled (max_bindings)." % [binding_index, action_name])
+		cancel_rebind_listen()
+		return
+
+	var conflicts: Array[String] = []
+	for other in player.find_conflicts(event, action_name):
+		conflicts.append(other.action_name)
+	_end_rebind()
+	binding_remapped.emit(pid, action_name)
+	if not conflicts.is_empty():
+		rebind_conflict.emit(pid, action_name, conflicts)
+
+
+## Leaves listen mode. Held state is reset because players received no input
+## while listening, so a release may have been missed.
+func _end_rebind() -> void:
+	_rebind_ctx = {}
+	for player_id in players:
+		(players[player_id] as GWPlayer).clear_input_state()
