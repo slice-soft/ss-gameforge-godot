@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.0-rc.3](https://github.com/slice-soft/ss-gameforge-godot/compare/ss-gameforge-wired-v2.0.0-rc.2...ss-gameforge-wired-v2.0.0-rc.3) (2026-11-27)
+
+
+### Bug Fixes
+
+* **wired:** describe the plugin accurately ([#69](https://github.com/slice-soft/ss-gameforge-godot/issues/69)) ([#70](https://github.com/slice-soft/ss-gameforge-godot/issues/70)) ([4c2e6af](https://github.com/slice-soft/ss-gameforge-godot/commit/4c2e6afcb1d34023b01cdf18387108b1732fafe4))
+
 ## [2.0.0-rc.2](https://github.com/slice-soft/ss-gameforge-godot/compare/ss-gameforge-wired-v2.0.0-rc.1...ss-gameforge-wired-v2.0.0-rc.2) (2026-11-27)
 
 
