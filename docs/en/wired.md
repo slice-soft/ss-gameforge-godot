@@ -43,7 +43,9 @@ template or the other players.
 > Key bindings are **physical**: `from_key(KEY_W)` means the key in the W
 > position, which is Z on an AZERTY keyboard, so WASD works on every layout.
 > `GWBinding.get_display_name()` shows the label of that key on the player's
-> current layout.
+> current layout (on desktop; headless, mobile and web fall back to the US QWERTY
+> name). Gamepad inputs are prefixed — `Pad A`, `Pad LX +` — so they never read
+> like keys.
 
 ## Usage: creating the manager
 

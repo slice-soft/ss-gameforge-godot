@@ -43,7 +43,9 @@ plantilla ni a los demás jugadores.
 > Los bindings de teclado son **físicos**: `from_key(KEY_W)` es la tecla en la
 > posición de la W, que en un teclado AZERTY es la Z, así que WASD funciona en
 > cualquier distribución. `GWBinding.get_display_name()` muestra la etiqueta de
-> esa tecla en la distribución actual del jugador.
+> esa tecla en la distribución actual del jugador (en escritorio; en headless,
+> móvil y web usa el nombre de US QWERTY). Las entradas de gamepad llevan prefijo
+> — `Pad A`, `Pad LX +` — para que nunca se confundan con teclas.
 
 ## Uso: crear el manager
 
