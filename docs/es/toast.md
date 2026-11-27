@@ -64,6 +64,10 @@ ToastService.i.loader_task("Descargando...", request.request_completed)
 request.request(url)
 ```
 
+La señal puede traer cualquier cantidad de argumentos; se ignoran. El loader
+aparece de inmediato, fuera de la cola y del límite `max_visible`, para que el
+aviso de progreso nunca quede esperando detrás de otros toasts.
+
 > Usa `loader()` cuando quieras un spinner que se cierre con la duración normal
 > en vez de esperar una señal.
 
@@ -78,7 +82,7 @@ claves que entiende el resolutor:
 | `icon` | `icon_color` | `icon_scene` |
 | `icon_spin` | `icon_spin_speed` | `icon_size` |
 | `font_size` | `padding` | `corner_radius` |
-| `position` | `position_margin` | |
+| `position` | `position_margin` | `max_width` |
 
 ```gdscript
 ToastService.i.info("Logro desbloqueado", {
@@ -101,8 +105,12 @@ func _enter_tree() -> void:
 ```
 
 `ToastTheme` expone los valores globales (`duration`, `font_size`, `icon_size`,
-`corner_radius`, `padding`, `position`, `position_margin`) más un color de fondo,
-color de texto e ícono por cada estilo.
+`corner_radius`, `padding`, `position`, `position_margin`, `max_width`) más un
+color de fondo, color de texto e ícono por cada estilo.
+
+El texto más largo que `max_width` (480 px por defecto, y nunca más ancho que la
+pantalla menos `position_margin`) pasa a varias líneas. Ponlo en `0` para
+desactivar el salto de línea.
 
 ## Uso: cola y apilado
 
@@ -118,3 +126,17 @@ ToastService.i.max_queue = 50        # mensajes en cola antes de descartar
 
 > Con `stack_toasts = false` el servicio espera a que termine el toast activo
 > antes de mostrar el siguiente de la cola.
+
+## Capa de dibujo
+
+Los toasts se dibujan en un `CanvasLayer` que el servicio crea como hijo propio,
+así que una `Camera2D` nunca los mueve. `layer` (por defecto `100`) decide sobre
+qué se dibujan: súbelo si tu HUD usa una capa más alta. Como la capa pertenece al
+servicio, sus toasts desaparecen con él cuando se libera.
+
+```gdscript
+ToastService.i.layer = 200
+```
+
+Los toasts pedidos antes de que el servicio entre al árbol esperan en la cola y
+aparecen apenas esté listo.

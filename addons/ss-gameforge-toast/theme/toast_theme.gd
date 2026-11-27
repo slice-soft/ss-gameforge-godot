@@ -9,6 +9,9 @@ class_name ToastTheme
 @export var padding := 10.0
 @export var position_margin := Vector2(16, 16)
 @export var position := ToastConstants.ToastPosition.BOTTOM_CENTER
+## Widest a toast grows before its text wraps (also capped to the screen width).
+## 0 disables wrapping.
+@export var max_width := 480.0
 
 # Per-style visual configuration.
 @export_group("Info")

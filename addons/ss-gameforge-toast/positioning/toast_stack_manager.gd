@@ -37,6 +37,10 @@ func get_active_count_at_position(position: ToastConstants.ToastPosition) -> int
 func cleanup_invalid_views() -> void:
 	_active_views = _active_views.filter(func(view): return is_instance_valid(view))
 
+# Repositions every active toast, e.g. after the spacing changed.
+func reflow() -> void:
+	_reflow_stack()
+
 # Recomputes stacking order per position.
 func _reflow_stack() -> void:
 	cleanup_invalid_views()
@@ -56,7 +60,7 @@ func _reflow_stack() -> void:
 		for i in range(views_at_position.size()):
 			var view: ToastView = views_at_position[i]
 			if view != null and is_instance_valid(view):
-				view.apply_stack(i, _stack_spacing)
+				view.apply_stack(views_at_position.slice(0, i), _stack_spacing)
 
 # Clears all tracked views.
 func clear() -> void:

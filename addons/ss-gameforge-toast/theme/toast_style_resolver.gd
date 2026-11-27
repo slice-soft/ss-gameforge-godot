@@ -17,6 +17,7 @@ const RESOLVE_KEYS := [
 	"corner_radius",
 	"position",
 	"position_margin",
+	"max_width",
 ]
 
 # Resolves a complete style dictionary based on theme, style, and overrides.
@@ -69,6 +70,7 @@ static func _apply_global_defaults(data: Dictionary, theme: ToastTheme) -> void:
 	data["corner_radius"] = theme.corner_radius
 	data["position"] = theme.position
 	data["position_margin"] = theme.position_margin
+	data["max_width"] = theme.max_width
 
 # Overrides any keys provided by the caller.
 static func _apply_overrides(data: Dictionary, overrides: Dictionary) -> void:
