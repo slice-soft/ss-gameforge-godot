@@ -10,7 +10,8 @@ enum BindingType { KEY, MOUSE_BUTTON, JOY_BUTTON, JOY_AXIS }
 @export var type: BindingType = BindingType.KEY
 ## Device ID. -1 = any gamepad or keyboard/mouse. >= 0 = specific gamepad.
 @export var device_id: int = -1
-## Keyboard key (only when type == KEY).
+## Keyboard key (only when type == KEY), as a physical position on a US QWERTY
+## layout: KEY_W is the key above S on any layout (Z on AZERTY).
 @export var key_code: Key = KEY_NONE
 ## Mouse button (only when type == MOUSE_BUTTON).
 @export var mouse_button: MouseButton = MOUSE_BUTTON_NONE
@@ -26,7 +27,7 @@ enum BindingType { KEY, MOUSE_BUTTON, JOY_BUTTON, JOY_AXIS }
 
 # --- Factories ---
 
-## Creates a binding from a keyboard key.
+## Creates a binding from a keyboard key position (physical keycode, US QWERTY names).
 static func from_key(p_key_code: Key) -> GWBinding:
 	var b := GWBinding.new()
 	b.type = BindingType.KEY
@@ -68,7 +69,7 @@ func matches_event(event: InputEvent) -> bool:
 	match type:
 		BindingType.KEY:
 			if event is InputEventKey:
-				return (event as InputEventKey).keycode == key_code
+				return (event as InputEventKey).physical_keycode == key_code
 		BindingType.MOUSE_BUTTON:
 			if event is InputEventMouseButton:
 				return (event as InputEventMouseButton).button_index == mouse_button
@@ -108,7 +109,7 @@ func get_strength(assigned_devices: Array) -> float:
 		BindingType.KEY:
 			if not assigned_devices.has(-1):
 				return 0.0
-			return 1.0 if Input.is_key_pressed(key_code) else 0.0
+			return 1.0 if Input.is_physical_key_pressed(key_code) else 0.0
 		BindingType.MOUSE_BUTTON:
 			if not assigned_devices.has(-1):
 				return 0.0
@@ -141,7 +142,9 @@ func get_strength(assigned_devices: Array) -> float:
 func get_display_name() -> String:
 	match type:
 		BindingType.KEY:
-			return OS.get_keycode_string(key_code)
+			# Label of the key at this position on the user's current layout.
+			var label := DisplayServer.keyboard_get_label_from_physical(key_code)
+			return OS.get_keycode_string(label if label != KEY_NONE else key_code)
 		BindingType.MOUSE_BUTTON:
 			match mouse_button:
 				MOUSE_BUTTON_LEFT:       return "Mouse L"
