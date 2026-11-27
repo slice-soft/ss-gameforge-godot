@@ -17,11 +17,14 @@ signal finished
 
 var _base_position: ToastConstants.ToastPosition = ToastConstants.ToastPosition.BOTTOM_CENTER
 var _base_margin: Vector2 = Vector2(16, 16)
-var _stack_index := -1
+# Toasts at the same position that sit closer to the anchor than this one.
+var _stack_before: Array = []
 var _stack_spacing := 0.0
 var _icon_custom_node: Node = null
 var _icon_spin_tween: Tween = null
 var _open_tween: Tween = null
+var _life_tween: Tween = null
+var _closing := false
 var _position_request_id := 0
 
 # Plays a debug toast when enabled from the inspector.
@@ -34,6 +37,7 @@ func _ready() -> void:
 func play(text: String, style_data: Dictionary) -> void:
 	_set_text(text)
 	_apply_visual_styles(style_data)
+	_apply_wrap(text, style_data)
 	_start_animation(style_data)
 
 # Returns the base position before stacking offsets.
@@ -41,8 +45,8 @@ func get_base_position() -> int:
 	return _base_position
 
 # Updates stacking information and triggers repositioning.
-func apply_stack(index: int, spacing: float) -> void:
-	_stack_index = index
+func apply_stack(before: Array, spacing: float) -> void:
+	_stack_before = before
 	_stack_spacing = spacing
 	_request_position_update(_base_position, _base_margin)
 
@@ -83,24 +87,51 @@ func _start_animation(style_data: Dictionary) -> void:
 	var duration: float = float(style_data.get("duration", 2.0))
 
 	if duration > 0.0:
-		var tween := ToastAnimator.play_toast_animation(self, duration)
-		tween.finished.connect(func():
-			finished.emit()
-			queue_free()
-		)
+		_life_tween = ToastAnimator.play_toast_animation(self, duration)
+		_life_tween.finished.connect(_close)
 	else:
 		_open_tween = ToastAnimator.fade_in(self)
 
-# Manually closes the toast, triggering the fade-out animation.
+# Closes the toast early with a fade-out. Safe to call more than once, and on a
+# toast that has a duration.
 func dismiss() -> void:
-	if _open_tween != null and is_instance_valid(_open_tween):
-		_open_tween.kill()
-		_open_tween = null
-	var tween := ToastAnimator.fade_out(self)
-	tween.finished.connect(func():
-		finished.emit()
-		queue_free()
-	)
+	if _closing:
+		return
+	_closing = true
+	for tween in [_open_tween, _life_tween]:
+		if tween != null and is_instance_valid(tween):
+			tween.kill()
+	_open_tween = null
+	_life_tween = null
+	ToastAnimator.fade_out(self).finished.connect(_close)
+
+# Emits finished exactly once and frees the view.
+func _close() -> void:
+	if is_queued_for_deletion():
+		return
+	_closing = true
+	finished.emit()
+	queue_free()
+
+# Wraps the text when the toast would grow past max_width (or past the screen).
+func _apply_wrap(text: String, style_data: Dictionary) -> void:
+	var max_width := float(style_data.get("max_width", 480.0))
+	var margin: Vector2 = style_data.get("position_margin", Vector2(16, 16))
+	max_width = minf(max_width, get_viewport_rect().size.x - margin.x * 2.0)
+	var padding := float(style_data.get("padding", 10.0))
+	var font_size := int(style_data.get("font_size", 14))
+	var font := label.get_theme_font("normal_font")
+	var text_width := font.get_multiline_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
+	var chrome := padding * 2.0
+	if icon.visible:
+		chrome += icon.custom_minimum_size.x + float(($PanelContainer/Content as HBoxContainer).get_theme_constant("separation"))
+	var room := maxf(max_width - chrome, 1.0)
+	if max_width > 0.0 and text_width > room:
+		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		label.custom_minimum_size.x = room
+	else:
+		label.autowrap_mode = TextServer.AUTOWRAP_OFF
+		label.custom_minimum_size.x = 0.0
 
 # Enables a spinning animation for loader-style icons.
 func _apply_icon_spin(
@@ -142,11 +173,10 @@ func _apply_position(pos: ToastConstants.ToastPosition, margin: Vector2, request
 	if request_id != _position_request_id:
 		return
 	
-	var stack_offset := ToastPositionCalculator.calculate_stack_offset(
-		pos,
-		_stack_index,
-		panel_container.size,
-		_stack_spacing
-	)
+	var heights: Array[float] = []
+	for other in _stack_before:
+		if is_instance_valid(other):
+			heights.append((other as ToastView).panel_container.size.y)
+	var stack_offset := ToastPositionCalculator.calculate_stack_offset(pos, heights, _stack_spacing)
 	
 	ToastPositionCalculator.apply_position(panel_container, pos, margin, stack_offset)

@@ -64,6 +64,10 @@ ToastService.i.loader_task("Downloading...", request.request_completed)
 request.request(url)
 ```
 
+The signal may carry any number of arguments; they are ignored. The loader
+shows right away, outside the queue and the `max_visible` limit, so progress
+feedback is never held back behind other toasts.
+
 > Use `loader()` instead when you want a spinner that dismisses on the normal
 > duration rather than waiting on a signal.
 
@@ -78,7 +82,7 @@ the resolver understands:
 | `icon` | `icon_color` | `icon_scene` |
 | `icon_spin` | `icon_spin_speed` | `icon_size` |
 | `font_size` | `padding` | `corner_radius` |
-| `position` | `position_margin` | |
+| `position` | `position_margin` | `max_width` |
 
 ```gdscript
 ToastService.i.info("Achievement unlocked", {
@@ -101,8 +105,12 @@ func _enter_tree() -> void:
 ```
 
 `ToastTheme` exposes global defaults (`duration`, `font_size`, `icon_size`,
-`corner_radius`, `padding`, `position`, `position_margin`) plus a colour, text
-colour and icon per style.
+`corner_radius`, `padding`, `position`, `position_margin`, `max_width`) plus a
+colour, text colour and icon per style.
+
+Text longer than `max_width` (480 px by default, and never wider than the
+screen minus `position_margin`) wraps onto more lines. Set it to `0` to turn
+wrapping off.
 
 ## Usage: queueing and stacking
 
@@ -118,3 +126,17 @@ ToastService.i.max_queue = 50        # messages held before dropping
 
 > With `stack_toasts = false` the service waits for the active toast to finish
 > before showing the next one in the queue.
+
+## Drawing layer
+
+Toasts are drawn on a `CanvasLayer` the service creates as its own child, so a
+`Camera2D` never moves them. `layer` (default `100`) decides what they draw
+over: raise it if your HUD uses a higher layer. Because the layer belongs to the
+service, its toasts go away with it when the service is freed.
+
+```gdscript
+ToastService.i.layer = 200
+```
+
+Toasts requested before the service has entered the tree wait in the queue and
+show as soon as it is ready.
