@@ -84,6 +84,17 @@ func matches_event(event: InputEvent) -> bool:
 	return false
 
 
+## Returns true if the event comes from the physical input this binding reads,
+## whatever its value. Unlike matches_event(), a JOY_AXIS binding matches motion
+## on its axis in either direction, including the return to 0 — which is what
+## edge detection needs to notice a release.
+func matches_input(event: InputEvent) -> bool:
+	if type == BindingType.JOY_AXIS and event is InputEventJoypadMotion:
+		var ev := event as InputEventJoypadMotion
+		return (device_id < 0 or device_id == ev.device) and ev.axis == joy_axis
+	return matches_event(event)
+
+
 ## Returns true if this binding is currently held.
 ## assigned_devices is the list of int device IDs owned by the querying player.
 func is_pressed(assigned_devices: Array) -> bool:

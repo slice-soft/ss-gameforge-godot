@@ -92,8 +92,12 @@ func _process(_delta: float) -> void:
 ```
 
 Llamados sin evento, `is_action_just_pressed()` e `is_action_just_released()`
-usan seguimiento por frame, así que son seguros dentro de `_process()`. Pasa el
-evento cuando estés en `_input()` y quieras reaccionar a ese evento exacto:
+usan seguimiento por frame, así que son seguros dentro de `_process()` y de
+`_physics_process()`. Una pulsación cuenta una sola vez: mantener el stick, la
+repetición de tecla o pulsar un segundo binding de una acción que ya está
+presionada no la vuelve a disparar, y la liberación solo se emite cuando ya no
+queda ningún binding presionado. Pasa el evento cuando estés en `_input()` y
+quieras reaccionar a ese evento exacto:
 
 ```gdscript
 func _input(event: InputEvent) -> void:
@@ -122,6 +126,17 @@ var p2 := wired.create_player(1, "Player 2")
 p2.assign_gamepad(0)
 ```
 
+Asignar un pad se lo quita a quien lo tuviera antes. Para un solo jugador que
+debe tomar cualquier pad que se conecte, usa `accepts_any_gamepad`: lee todos
+los pads conectados que ningún otro jugador haya reclamado. Cargar una config
+`SINGLE` u `ONLINE` lo activa para el jugador 0.
+
+```gdscript
+var p1 := wired.create_player(0, "Player 1")
+p1.accepts_keyboard = true
+p1.accepts_any_gamepad = true
+```
+
 Luego pasa el id del jugador al leer:
 
 ```gdscript
@@ -146,7 +161,11 @@ func _on_device_pressed(device_id: int) -> void:
 ```
 
 `get_unassigned_gamepads()` lista los pads todavía libres, y
-`device_connected` / `device_disconnected` cubren la conexión en caliente.
+`device_connected` / `device_disconnected` cubren la conexión en caliente. Un
+pad que se desconecta vuelve al mismo jugador cuando se reconecta.
+
+> Llamar a `create_player()` con un id que ya existe reemplaza a ese jugador
+> (primero se emite `player_removed`) y libera sus pads.
 
 ## Uso: remapear en tiempo de ejecución
 
