@@ -43,7 +43,8 @@ the child node's name**. Set `default_state` in the inspector to the state that
 should run first.
 
 > `controlled_node` is resolved as the machine's `owner` — the root of the scene
-> the machine was saved in. Each state receives it before `start()` is called.
+> the machine was saved in — or as its parent when the machine is itself the
+> scene root. Each state receives it before `start()` is called.
 
 ## Usage: writing a state
 
@@ -116,16 +117,21 @@ func _on_state_changed(from: String, to: String) -> void:
 	print("%s -> %s" % [from, to])
 ```
 
-`from` is an empty string on the very first transition, since nothing was
-running before it.
+The default state fires it too, with `from` as an empty string, since nothing
+was running before it. It also appears first in `get_state_history()`.
 
 ## Behaviour worth knowing
 
 - **Re-entering the current state is ignored.** `change_to()` returns early when
   the target is already active, so a state cannot restart itself this way.
-- **A missing state is an error, not a crash.** An unknown name calls
-  `push_error()` and leaves the current state running.
+- **A missing state is an error, not a crash.** An unknown name, or a child that
+  is not a `StateBase`, calls `push_error()` and leaves the current state running.
+- **Transitions requested during a transition wait their turn.** A `change_to()`
+  called from `start()` or `end()` runs right after the current transition has
+  finished and emitted `state_changed`, so listeners always see `A -> B` before
+  `B -> C`.
 - **The default state starts deferred.** `_ready()` defers the first transition,
-  so the whole tree is available by the time `start()` runs.
+  so the whole tree is available by the time `start()` runs. A `change_to()`
+  made before that wins: the default state is then skipped.
 - **`change_to_previous()` only remembers one step back.** It is a swap, not a
   stack: use it for pause screens, not for deep navigation history.
