@@ -1,8 +1,8 @@
 {
-  "addons/ss-gameforge-singleton": "1.0.1",
-  "addons/ss-gameforge-state-machine": "1.0.1",
-  "addons/ss-gameforge-dialogue": "1.2.0",
-  "addons/ss-gameforge-toast": "1.1.0",
+  "addons/ss-gameforge-singleton": "1.0.2-rc.1",
+  "addons/ss-gameforge-state-machine": "1.0.2-rc.1",
+  "addons/ss-gameforge-dialogue": "1.3.0-rc.1",
+  "addons/ss-gameforge-toast": "1.2.0-rc.1",
   "addons/ss-gameforge-wired": "2.0.0-rc.3",
   "addons/ss-gameforge-event-bus": "0.1.0-rc.1"
 }
