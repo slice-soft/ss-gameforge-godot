@@ -12,11 +12,11 @@ enum ActionType { BUTTON, AXIS }
 
 ## Internal identifier used in gameplay code (e.g. "jump", "attack").
 var action_name: String = ""
-## Label shown in the rebind UI (e.g. "Jump", "Attack").
+## Label for your rebind menu (e.g. "Jump", "Attack").
 var display_name: String = ""
-## Optional tooltip shown in the rebind UI.
+## Optional tooltip for your rebind menu.
 var description: String = ""
-## Groups this action with others in the UI (e.g. "Movement", "Combat").
+## Groups this action with others in your menus (e.g. "Movement", "Combat").
 var category: String = "General"
 ## Maximum number of simultaneous bindings. 0 = unlimited.
 var max_bindings: int = 2
@@ -26,7 +26,7 @@ var action_type: ActionType = ActionType.BUTTON
 var positive_name: String = ""
 ## Axis only — label for the negative direction (e.g. "left", "down").
 var negative_name: String = ""
-## If false, this action does not appear as editable in the rebind UI.
+## If false, start_rebind_listen() refuses this action; hide it from your rebind menu.
 var allow_rebind: bool = true
 ## Active bindings list (positive direction for AXIS actions).
 var bindings: Array[GWBinding] = []
