@@ -1,7 +1,9 @@
 # Dialogue
 
 `DialogueView` is a `Control` that types out a sequence of lines, one character
-at a time, and animates a box in and out around them. The lines live in a
+at a time, and animates a box in and out around them. The box can be a screen
+dialogue box or a speech bubble over a character, in 2D or 3D
+(`DialogueView3D`). The lines live in a
 `DialogueResource`, so writing content never means touching the view.
 
 ## When to use
@@ -9,6 +11,7 @@ at a time, and animates a box in and out around them. The lines live in a
 - You need a dialogue box with a typewriter reveal and open/close animation.
 - You want the text content to be data, editable as a resource.
 - Your lines use BBCode and must reveal correctly, tag by tag.
+- You want a fixed box at the bottom of the screen, speech bubbles in the world, or both.
 
 ## Key API
 
@@ -16,6 +19,10 @@ at a time, and animates a box in and out around them. The lines live in a
 - `stop()` cancels the current dialogue and plays the close animation.
 - `apply_theme()` re-applies `dialogue_theme`; `play()` already calls it.
 - `is_playing()` is true from `play()` until `dialogue_finished`.
+- `skip()` completes the current line or advances, like a `skip_action` press.
+- `@export layout`: `SCREEN` (bottom box) or `BUBBLE` (speech bubble).
+- `@export input_mode`: `AUTO`, `EVENTS`, `POLLING` or `NONE`.
+- `DialogueView3D` is a `Node3D` speech bubble wrapping a `DialogueView`.
 - Signals: `dialogue_started`, `line_changed(index)`, `dialogue_finished`.
 - `@export skip_action` is the input action that skips typing or advances. Defaults to `ui_accept`.
 - `DialogueResource` holds the lines and every timing/animation setting.
@@ -105,6 +112,71 @@ so the press that started a conversation never skips its first line.
 In every mode, pressing `skip_action` while a line is still typing completes
 that line instantly — as long as `allow_skip` is true.
 
+## Usage: layouts — screen box or speech bubble
+
+`layout` decides where the box goes. The same resource, theme and API work with
+both, so one game can use a screen box for story scenes and bubbles for
+background chatter.
+
+| Layout | Looks like | Fits |
+|---|---|---|
+| `SCREEN` (default) | A box across the bottom of the view, growing upward. | Top-down and side-view games with a fixed dialogue box. |
+| `BUBBLE` | A box sized to its text (wrapping at the theme's `bubble_max_width`), with its bottom-centre on the view's origin. | Speech bubbles over characters, in 2D or 3D. |
+
+### 2D speech bubble
+
+Put a `DialogueView` with `layout = BUBBLE` under a `Node2D` (a `Marker2D`
+above the character's head works well). The bubble's tail sits on that point and
+follows the character and the camera:
+
+```gdscript
+@onready var bubble: DialogueView = $HeadMarker/DialogueView  # layout = BUBBLE
+
+func talk() -> void:
+	bubble.play(npc_lines)
+```
+
+### 3D speech bubble: `DialogueView3D`
+
+`DialogueView3D` is a `Node3D` that builds the world-space setup for you: a
+transparent `SubViewport` holding a `DialogueView` in `BUBBLE` layout, shown on
+a billboard `Sprite3D`, with the viewport resized to the bubble on every line.
+Place it where the tail should point and call `play()`:
+
+```gdscript
+@onready var bubble: DialogueView3D = $Head/DialogueView3D
+
+func talk() -> void:
+	bubble.play(npc_lines)
+```
+
+It forwards `play()`, `stop()`, `skip()`, `is_playing()` and the three signals;
+`get_view()` returns the inner `DialogueView` for anything else. Sprite options:
+`pixel_size` (world units per bubble pixel, default `0.01`), `billboard`,
+`no_depth_test` (on by default, so geometry never hides the text) and
+`fixed_size` (same size on screen at any distance).
+
+## Usage: input
+
+`skip_action` is read according to `input_mode`:
+
+| Mode | Reads input from |
+|---|---|
+| `AUTO` (default) | `_unhandled_input` events, marking the press handled. When the view sits in a `SubViewport` that gets no events (one used as a texture, like inside `DialogueView3D`), it polls instead. |
+| `EVENTS` | Only events. |
+| `POLLING` | `Input.is_action_just_pressed()` every frame, in any viewport. The press is not consumed. |
+| `NONE` | Nothing: drive the dialogue yourself with `skip()`. |
+
+`skip()` does what a press does: completes the line being typed, or advances to
+the next line (except in `AUTO` advance mode). It returns `true` when it did
+something, so you can forward input from your own system, e.g. per player:
+
+```gdscript
+func _process(_delta: float) -> void:
+	if player.is_action_just_pressed("talk"):
+		bubble.skip()
+```
+
 ## Usage: timing and animation
 
 All of it lives on the resource:
@@ -130,7 +202,9 @@ dialogue_view.apply_theme()
 
 The theme covers the box (`background_color`, `border_color`, `border_width`,
 `corner_radius`, `padding`), the text (`font_color`, `font_size`, `font`) and
-`position_margin`, the distance from the view's left, right and bottom edges.
+`position_margin`, the distance from the view's left, right and bottom edges
+(`SCREEN` layout), and `bubble_max_width`, where a bubble's text starts to wrap
+(`BUBBLE` layout, default 320 px).
 
 For a textured box, set `background_texture` (drawn as a 9-slice, with
 `texture_patch_margin` pixels of unstretched border). `background_color` then

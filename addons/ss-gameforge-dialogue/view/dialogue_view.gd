@@ -7,6 +7,22 @@ signal line_changed(index: int)
 ## Emitted once when the sequence ends (all lines done, or stop()) and the close
 ## animation finishes.
 signal dialogue_finished
+## BUBBLE layout: emitted when the bubble's size changes (a new line was laid out).
+signal bubble_resized(size: Vector2)
+
+## How the box is laid out.
+enum Layout {
+	SCREEN, ## Spans the bottom of the view (the screen by default) and grows upward.
+	BUBBLE, ## Sized to its text, bottom-centre on the view's origin. For speech bubbles.
+}
+
+## Where skip_action is read from.
+enum InputMode {
+	AUTO,    ## Input events, or polling when the view's viewport receives none (a SubViewport used as a texture).
+	EVENTS,  ## Only _unhandled_input events; the press is marked handled.
+	POLLING, ## Input.is_action_just_pressed() every frame; works in any viewport.
+	NONE,    ## The view reads no input; call skip() from your own input code.
+}
 
 ## Input action used to skip typing or advance to the next line.
 @export var skip_action: StringName = "ui_accept"
@@ -14,6 +30,14 @@ signal dialogue_finished
 @export var dialogue_theme: DialogueTheme
 ## Optional: assign a resource to auto-start when auto_start is true on it.
 @export var resource: DialogueResource
+## Screen box or speech bubble.
+@export var layout: Layout = Layout.SCREEN:
+	set(value):
+		layout = value
+		if is_node_ready():
+			apply_theme()
+## Where skip_action is read from.
+@export var input_mode: InputMode = InputMode.AUTO
 
 enum _State { IDLE, WAITING, OPENING, TYPING, HOLDING, CLOSING }
 
@@ -29,6 +53,7 @@ var _box_tween: Tween
 var _current_tween: Tween
 var _current_line: String = ""
 var _current_line_visible_length: int = 0
+var _theme: DialogueTheme
 
 
 func _ready() -> void:
@@ -38,6 +63,8 @@ func _ready() -> void:
 	_box.visible = false
 	_box.scale = Vector2.ZERO
 	set_process_unhandled_input(false)
+	set_process(false)
+	_box.resized.connect(_place_bubble)
 	apply_theme()
 	if resource and resource.auto_start:
 		play(resource)
@@ -77,8 +104,34 @@ func is_playing() -> bool:
 	return _state != _State.IDLE
 
 
+## Does what a skip_action press does: completes the line being typed, or
+## advances to the next one (not in AUTO mode). Use it to drive the dialogue
+## from your own input code. Returns true if it did something.
+func skip() -> bool:
+	if _resource == null or not _resource.allow_skip:
+		return false
+	match _state:
+		_State.TYPING:
+			if _current_tween != null:
+				_current_tween.kill()
+				_current_tween = null
+			_on_line_typed()
+			return true
+		_State.HOLDING:
+			if _resource.advance_mode == DialogueConstants.AdvanceMode.AUTO:
+				return false
+			_timer.stop()
+			_advance()
+			return true
+		_State.OPENING:
+			# Swallowed so the press that opened the dialogue does not skip line 0.
+			return true
+	return false
+
+
 func apply_theme() -> void:
 	var t := dialogue_theme if dialogue_theme != null else _default_theme()
+	_theme = t
 
 	var style: StyleBox
 	if t.background_texture != null:
@@ -111,13 +164,20 @@ func apply_theme() -> void:
 	else:
 		_label.remove_theme_font_override("normal_font")
 
-	# Full width minus the margins, bottom edge position_margin.y above the
-	# view's bottom; the box grows upward to fit its text.
-	_box.set_anchor_and_offset(SIDE_LEFT, 0.0, t.position_margin.x)
-	_box.set_anchor_and_offset(SIDE_RIGHT, 1.0, -t.position_margin.x)
-	_box.set_anchor_and_offset(SIDE_TOP, 1.0, -t.position_margin.y)
-	_box.set_anchor_and_offset(SIDE_BOTTOM, 1.0, -t.position_margin.y)
-	_box.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	if layout == Layout.SCREEN:
+		# Full width minus the margins, bottom edge position_margin.y above the
+		# view's bottom; the box grows upward to fit its text.
+		_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_label.custom_minimum_size.x = 0.0
+		_box.set_anchor_and_offset(SIDE_LEFT, 0.0, t.position_margin.x)
+		_box.set_anchor_and_offset(SIDE_RIGHT, 1.0, -t.position_margin.x)
+		_box.set_anchor_and_offset(SIDE_TOP, 1.0, -t.position_margin.y)
+		_box.set_anchor_and_offset(SIDE_BOTTOM, 1.0, -t.position_margin.y)
+		_box.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	else:
+		# Free-sized box; _place_bubble() keeps its bottom-centre on the origin.
+		_box.set_anchors_preset(Control.PRESET_TOP_LEFT)
+		_fit_bubble()
 
 
 func _start_dialogue() -> void:
@@ -127,7 +187,7 @@ func _start_dialogue() -> void:
 	# Lay out the first line before opening, so the box opens at its final size.
 	if not _resource.dialogues.is_empty():
 		_set_current_line(_line_text(0))
-	set_process_unhandled_input(true)
+	_listen(true)
 	dialogue_started.emit()
 	_animate_box(
 		Vector2.ONE,
@@ -181,7 +241,7 @@ func _advance() -> void:
 func _finish_dialogue() -> void:
 	_state = _State.CLOSING
 	_timer.stop()
-	set_process_unhandled_input(false)
+	_listen(false)
 	if _current_tween != null:
 		_current_tween.kill()
 		_current_tween = null
@@ -207,24 +267,32 @@ func _on_timer_timeout() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if not _resource.allow_skip or not event.is_action_pressed(skip_action):
-		return
-	match _state:
-		_State.TYPING:
-			get_viewport().set_input_as_handled()
-			if _current_tween != null:
-				_current_tween.kill()
-				_current_tween = null
-			_on_line_typed()
-		_State.HOLDING:
-			if _resource.advance_mode == DialogueConstants.AdvanceMode.AUTO:
-				return
-			get_viewport().set_input_as_handled()
-			_timer.stop()
-			_advance()
-		_State.OPENING:
-			# Swallow it so the press that opened the dialogue does not skip line 0.
-			get_viewport().set_input_as_handled()
+	if event.is_action_pressed(skip_action) and skip():
+		get_viewport().set_input_as_handled()
+
+
+func _process(_delta: float) -> void:
+	if Input.is_action_just_pressed(skip_action):
+		skip()
+
+
+# Turns the chosen input source on or off for the running sequence.
+func _listen(on: bool) -> void:
+	var polling := _uses_polling()
+	set_process_unhandled_input(on and input_mode != InputMode.NONE and not polling)
+	set_process(on and polling)
+
+
+func _uses_polling() -> bool:
+	match input_mode:
+		InputMode.POLLING:
+			return true
+		InputMode.AUTO:
+			# A SubViewport only gets events through a SubViewportContainer (or
+			# when the game pushes them); one used as a texture gets none.
+			var vp := get_viewport()
+			return vp is SubViewport and not (vp.get_parent() is SubViewportContainer)
+	return false
 
 
 # Timer.start(0) would reuse the node's wait_time, so a zero delay is clamped
@@ -242,7 +310,7 @@ func _animate_box(
 ) -> void:
 	if _box_tween != null:
 		_box_tween.kill()
-	_box.pivot_offset = _box.size / 2.0
+	_box.pivot_offset = _pivot()
 	_box_tween = create_tween()
 	_box_tween.tween_property(_box, "scale", target_scale, maxf(time, 0.0))\
 		.set_trans(trans)\
@@ -258,6 +326,43 @@ func _set_current_line(line: String) -> void:
 	_label.text = line
 	_current_line_visible_length = _label.get_total_character_count()
 	_label.visible_characters = 0
+	if layout == Layout.BUBBLE:
+		_fit_bubble()
+
+
+# BUBBLE: one line as wide as its text, wrapping at bubble_max_width.
+func _fit_bubble() -> void:
+	if _theme == null:
+		return
+	var font := _label.get_theme_font("normal_font")
+	var font_size := _label.get_theme_font_size("normal_font_size")
+	var text_width := font.get_multiline_string_size(_label.get_parsed_text(), HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
+	var style := _box.get_theme_stylebox("panel")
+	var chrome := _theme.padding.x * 2.0 + style.get_margin(SIDE_LEFT) + style.get_margin(SIDE_RIGHT)
+	var room := maxf(_theme.bubble_max_width - chrome, 1.0)
+	if text_width > room:
+		_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_label.custom_minimum_size.x = room
+	else:
+		_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+		_label.custom_minimum_size.x = ceilf(text_width)
+	_box.reset_size()
+	_place_bubble()
+
+
+func _place_bubble() -> void:
+	if layout != Layout.BUBBLE:
+		return
+	_box.position = Vector2(-_box.size.x / 2.0, -_box.size.y)
+	_box.pivot_offset = _pivot()
+	bubble_resized.emit(_box.size)
+
+
+# Scale animations grow from the bubble's tail (bottom-centre) or the box centre.
+func _pivot() -> Vector2:
+	if layout == Layout.BUBBLE:
+		return Vector2(_box.size.x / 2.0, _box.size.y)
+	return _box.size / 2.0
 
 
 func _clear_current_line() -> void:
