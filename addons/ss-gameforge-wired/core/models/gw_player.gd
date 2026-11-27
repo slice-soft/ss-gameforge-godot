@@ -260,13 +260,17 @@ func to_dict() -> Dictionary:
 		"player_id": player_id,
 		"player_name": player_name,
 		"accepts_keyboard": accepts_keyboard,
+		"accepts_any_gamepad": accepts_any_gamepad,
 		"actions": action_dicts,
 	}
 
 
-## Applies serialized bindings from a Dictionary without recreating the player.
-## Emits action_rebound for each restored action.
+## Applies serialized bindings and keyboard/any-gamepad flags from a Dictionary
+## without recreating the player. Gamepad assignments are not restored: device
+## ids change between sessions. Emits action_rebound for each restored action.
 func apply_dict(d: Dictionary) -> void:
+	accepts_keyboard = d.get("accepts_keyboard", accepts_keyboard)
+	accepts_any_gamepad = d.get("accepts_any_gamepad", accepts_any_gamepad)
 	var saved_actions: Dictionary = d.get("actions", {})
 	for a_name in saved_actions:
 		if not actions.has(a_name):
@@ -277,7 +281,7 @@ func apply_dict(d: Dictionary) -> void:
 		for b_dict in saved_actions[a_name].get("bindings", []):
 			action.add_binding(GWBinding.from_dict(b_dict))
 		for b_dict in saved_actions[a_name].get("negative_bindings", []):
-			action.negative_bindings.append(GWBinding.from_dict(b_dict))
+			action.set_binding(action.negative_bindings.size(), GWBinding.from_dict(b_dict), true)
 		_held.erase(a_name)
 		action_rebound.emit(a_name)
 

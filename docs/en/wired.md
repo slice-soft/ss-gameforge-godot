@@ -31,6 +31,7 @@ template or the other players.
 
 - `GWInputManager.i` returns the active instance; `GWInputManager.ensure(root)` creates it.
 - `define_action(name, display_name, bindings, category, max_bindings)` registers a template.
+- `define_axis(name, display_name, positive, negative, category, max_bindings, positive_name, negative_name)` registers an axis template.
 - `create_player(player_id, player_name)` clones the templates into a new player.
 - `is_action_pressed(name, player_id)`, `is_action_just_pressed(name, event, player_id)`,
   `is_action_just_released(name, event, player_id)`, `get_action_strength(name, player_id)`.
@@ -38,6 +39,11 @@ template or the other players.
 - `start_rebind_listen(player_id, action_name, binding_index)` captures the next input.
 - `save_all_profiles(path)` / `load_all_profiles(path)` persist bindings as JSON.
 - `GWBinding.from_key()`, `.from_joy_button()`, `.from_joy_axis()`, `.from_mouse_button()`.
+
+> Key bindings are **physical**: `from_key(KEY_W)` means the key in the W
+> position, which is Z on an AZERTY keyboard, so WASD works on every layout.
+> `GWBinding.get_display_name()` shows the label of that key on the player's
+> current layout.
 
 ## Usage: creating the manager
 
@@ -223,7 +229,9 @@ GWInputManager.i.reset_all_to_defaults()
 
 `load_all_profiles()` does nothing if the file is missing, and only applies
 bindings to players that **already exist** — so create the players first, then
-load.
+load. Besides bindings it restores each player's `accepts_keyboard` and
+`accepts_any_gamepad`. Gamepad assignments are not saved, since device ids
+change between sessions.
 
 For several named profiles, `GWProfileManager` wraps the same thing in slots:
 
@@ -261,8 +269,16 @@ positive direction and a second list for the negative one, and reads back as a
 single value in `[-1.0, 1.0]`:
 
 ```gdscript
-var throttle := GWInputManager.i.get_action_axis("throttle")
+wired.define_axis("steer", "Steer",
+	[GWBinding.from_key(KEY_D), GWBinding.from_joy_axis(JOY_AXIS_LEFT_X, 1.0)],
+	[GWBinding.from_key(KEY_A), GWBinding.from_joy_axis(JOY_AXIS_LEFT_X, -1.0)],
+	"Driving", 2, "right", "left")
+
+var steer := GWInputManager.i.get_action_axis("steer")
 ```
+
+In a `GWConfig`, set `action_type` to `AXIS` and fill `default_bindings`
+(positive side) and `default_negative_bindings` (negative side).
 
 `positive_name` and `negative_name` on the action are the labels a rebind screen
 shows for each side ("accelerate" / "brake").

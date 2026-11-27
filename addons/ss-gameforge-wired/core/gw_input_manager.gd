@@ -70,17 +70,28 @@ func load_config(config: GWConfig) -> void:
 	_action_templates.clear()
 
 	for action_cfg in config.actions:
-		var a := define_action(
-			action_cfg.action_name,
-			action_cfg.display_name if not action_cfg.display_name.is_empty() else action_cfg.action_name,
-			action_cfg.default_bindings,
-			action_cfg.category,
-			action_cfg.max_bindings
-		)
+		var a: GWAction
+		if action_cfg.action_type == GWActionConfig.ActionType.AXIS:
+			a = define_axis(
+				action_cfg.action_name,
+				action_cfg.display_name,
+				action_cfg.default_bindings,
+				action_cfg.default_negative_bindings,
+				action_cfg.category,
+				action_cfg.max_bindings,
+				action_cfg.positive_name,
+				action_cfg.negative_name
+			)
+		else:
+			a = define_action(
+				action_cfg.action_name,
+				action_cfg.display_name,
+				action_cfg.default_bindings,
+				action_cfg.category,
+				action_cfg.max_bindings
+			)
 		a.allow_rebind = action_cfg.allow_rebind
-		a.action_type = action_cfg.action_type as GWAction.ActionType
-		a.positive_name = action_cfg.positive_name
-		a.negative_name = action_cfg.negative_name
+		a.description = action_cfg.description
 
 	match config.player_mode:
 		GWConfig.PlayerMode.SINGLE:
@@ -114,8 +125,30 @@ func define_action(
 	action.category = category
 	action.max_bindings = max_bindings
 	for b in default_bindings:
-		action.add_binding(b)
+		action.add_binding((b as GWBinding).duplicate() as GWBinding)
 	_action_templates[action_name] = action
+	return action
+
+
+## Registers an AXIS action template that reads back in [-1.0, 1.0] through
+## get_action_axis(). positive_bindings push toward +1.0, negative_bindings
+## toward -1.0. max_bindings caps each side separately.
+func define_axis(
+	action_name: String,
+	display_name: String = "",
+	positive_bindings: Array = [],
+	negative_bindings: Array = [],
+	category: String = "General",
+	max_bindings: int = 2,
+	positive_name: String = "",
+	negative_name: String = ""
+) -> GWAction:
+	var action := define_action(action_name, display_name, positive_bindings, category, max_bindings)
+	action.action_type = GWAction.ActionType.AXIS
+	action.positive_name = positive_name
+	action.negative_name = negative_name
+	for b in negative_bindings:
+		action.set_binding(action.negative_bindings.size(), (b as GWBinding).duplicate() as GWBinding, true)
 	return action
 
 
@@ -487,7 +520,7 @@ func _process_rebind_input(event: InputEvent) -> void:
 	if event is InputEventKey:
 		var ev := event as InputEventKey
 		if ev.is_pressed() and not ev.is_echo():
-			new_binding = GWBinding.from_key(ev.keycode)
+			new_binding = GWBinding.from_key(ev.physical_keycode if ev.physical_keycode != KEY_NONE else ev.keycode)
 	elif event is InputEventMouseButton:
 		var ev := event as InputEventMouseButton
 		if ev.is_pressed():
