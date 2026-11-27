@@ -138,13 +138,22 @@ func get_strength(assigned_devices: Array) -> float:
 	return 0.0
 
 
-## Returns a human-readable label: "Space", "A Button", "LX +", "Mouse L", etc.
+## Display servers that implement keyboard_get_label_from_physical(). Elsewhere
+## (headless, mobile, web) the call logs an error, so the US QWERTY name is used.
+const _LAYOUT_AWARE_SERVERS: Array[String] = ["Windows", "macOS", "X11", "Wayland"]
+
+
+## Returns a human-readable label: "Space", "Pad A", "Pad LX +", "Mouse L", etc.
 func get_display_name() -> String:
 	match type:
 		BindingType.KEY:
 			# Label of the key at this position on the user's current layout.
-			var label := DisplayServer.keyboard_get_label_from_physical(key_code)
-			return OS.get_keycode_string(label if label != KEY_NONE else key_code)
+			var label := key_code
+			if _LAYOUT_AWARE_SERVERS.has(DisplayServer.get_name()):
+				var local := DisplayServer.keyboard_get_label_from_physical(key_code)
+				if local != KEY_NONE:
+					label = local
+			return OS.get_keycode_string(label)
 		BindingType.MOUSE_BUTTON:
 			match mouse_button:
 				MOUSE_BUTTON_LEFT:       return "Mouse L"
@@ -154,10 +163,10 @@ func get_display_name() -> String:
 				MOUSE_BUTTON_WHEEL_DOWN: return "Wheel Down"
 				_: return "Mouse %d" % mouse_button
 		BindingType.JOY_BUTTON:
-			return _joy_button_name(joy_button)
+			return "Pad " + _joy_button_name(joy_button)
 		BindingType.JOY_AXIS:
 			var dir_str := "+" if axis_direction > 0.0 else "-"
-			return "%s %s" % [_joy_axis_name(joy_axis), dir_str]
+			return "Pad %s %s" % [_joy_axis_name(joy_axis), dir_str]
 	return "Unknown"
 
 
