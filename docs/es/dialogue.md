@@ -15,6 +15,7 @@ carácter y anima una caja de entrada y salida alrededor. Las líneas viven en u
 - `play(resource)` inicia una secuencia. Es el punto de entrada principal.
 - `stop()` cancela el diálogo actual y reproduce la animación de cierre.
 - `apply_theme()` reaplica `dialogue_theme`; `play()` ya lo llama.
+- `is_playing()` es true desde `play()` hasta `dialogue_finished`.
 - Señales: `dialogue_started`, `line_changed(index)`, `dialogue_finished`.
 - `@export skip_action` es la acción de entrada que salta el tipeo o avanza. Por defecto `ui_accept`.
 - `DialogueResource` contiene las líneas y toda la configuración de tiempos y animación.
@@ -22,9 +23,17 @@ carácter y anima una caja de entrada y salida alrededor. Las líneas viven en u
 
 ## Uso: agregar la vista
 
-Añade un nodo `DialogueView` a tu escena, o instancia
-`res://addons/ss-gameforge-dialogue/scenes/dialogue_view.tscn`. Arranca oculto y
-se muestra solo cuando corre `play()`.
+Instancia `res://addons/ss-gameforge-dialogue/scenes/dialogue_view.tscn` en tu
+escena. Arranca oculto y se muestra solo cuando corre `play()`.
+
+La vista ocupa todo su padre (toda la pantalla si no está dentro de un
+contenedor) y deja pasar el mouse. La caja abarca el ancho, queda a
+`position_margin` del borde inferior y crece hacia arriba según su texto, que
+salta a tantas líneas como necesite. Pon la vista en un `CanvasLayer` si tu juego
+usa una `Camera2D`, para que la cámara no la mueva.
+
+> No la metas dentro de un `VBoxContainer` u otro contenedor: el contenedor la
+> reduce a su tamaño mínimo y la caja se queda sin dónde anclarse.
 
 ## Uso: escribir el contenido
 
@@ -73,8 +82,16 @@ resource.dialogues = pokemon_flavor_texts
 dialogue_view.play(resource)
 ```
 
-`play()` se ignora mientras otra secuencia está corriendo, así que es seguro
-llamarlo desde un manejador de entrada.
+`play()` se ignora mientras otra secuencia está corriendo o cerrándose, así que
+es seguro llamarlo desde un manejador de entrada. `stop()` es seguro en cualquier
+momento, incluso durante la espera inicial o la animación de apertura, y
+`dialogue_finished` se emite una vez por secuencia (ninguna si `stop()` cancela
+durante la espera inicial, porque no se abrió nada).
+
+La pulsación de `skip_action` que salta o avanza se marca como manejada, así que
+no le llega también al juego. Las pulsaciones durante la animación de apertura se
+descartan, así que la misma pulsación que inició la conversación nunca salta su
+primera línea.
 
 ## Uso: cómo avanzan las líneas
 
@@ -114,11 +131,19 @@ dialogue_view.apply_theme()
 
 El tema cubre la caja (`background_color`, `border_color`, `border_width`,
 `corner_radius`, `padding`), el texto (`font_color`, `font_size`, `font`) y
-`position_margin`, la distancia a los bordes de la pantalla.
+`position_margin`, la distancia a los bordes izquierdo, derecho e inferior de la
+vista.
+
+Para una caja con textura, define `background_texture` (se dibuja como 9-slice,
+con `texture_patch_margin` píxeles de borde sin estirar). `background_color`
+entonces tiñe la textura, y el borde y las esquinas se ignoran.
 
 ## BBCode
 
-El revelado entiende BBCode. `BBCodeParser` cuenta solo los caracteres visibles y
-cierra cualquier etiqueta que quede abierta a mitad del revelado, así que una
-línea como `Búscalo en el [i]ala este[/i].` se escribe sin filtrar el marcado ni
-romper la cursiva a la mitad.
+El revelado entiende BBCode: la línea completa se acomoda primero y se revela con
+`RichTextLabel.visible_characters`, así que una línea como
+`Búscalo en el [i]ala este[/i].` se escribe sin filtrar el marcado, y las
+palabras nunca saltan a la siguiente línea a mitad del tipeo.
+
+`BBCodeParser` sigue disponible como utilidad (`visible_length()`, `prefix()`)
+para tu propio código.
