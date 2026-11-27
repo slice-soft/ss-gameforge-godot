@@ -20,6 +20,9 @@ dialogue box or a speech bubble over a character, in 2D or 3D
 - `apply_theme()` re-applies `dialogue_theme`; `play()` already calls it.
 - `is_playing()` is true from `play()` until `dialogue_finished`.
 - `skip()` completes the current line or advances, like a `skip_action` press.
+- `back()` shows the previous line again; `@export back_action` does it from input.
+- `@export history: DialogueHistory` records every line shown, shareable between views.
+- `@export hide_action` hides every dialogue while held; `DialogueView.set_all_hidden()` from code.
 - `@export layout`: `SCREEN` (bottom box) or `BUBBLE` (speech bubble).
 - `@export input_mode`: `AUTO`, `EVENTS`, `POLLING` or `NONE`.
 - `DialogueView3D` is a `Node3D` speech bubble wrapping a `DialogueView`.
@@ -176,6 +179,50 @@ func _process(_delta: float) -> void:
 	if player.is_action_just_pressed("talk"):
 		bubble.skip()
 ```
+
+## Usage: history and going back
+
+Every line a view shows is written to its `history`, a `DialogueHistory`
+resource. Assign the same one to several views (screen box, 2D and 3D bubbles)
+and it gathers every speaker in one log:
+
+```gdscript
+var log := DialogueHistory.new()
+
+func _ready() -> void:
+	$DialogueView.history = log
+	$Npc/DialogueView3D.history = log
+```
+
+Each entry is `{"text", "resource", "index"}`, with the text as it was shown
+(translated, BBCode included). The addon records; your game decides how the
+backlog looks:
+
+```gdscript
+func open_backlog() -> void:
+	for entry in log.get_entries():
+		backlog_list.append_text(entry["text"] + "\n")
+```
+
+`max_entries` (default 200, `0` = unlimited) drops the oldest, `clear()` empties
+it, and `entry_added` fires on every new line. A view with no history assigned
+keeps its own.
+
+`back()`, or a press of the optional `back_action`, shows the previous line of
+the running sequence again, already complete. Moving forward again does not
+record those lines twice.
+
+## Usage: hiding every dialogue
+
+Set `hide_action` to an input action and, while the player holds it, every
+dialogue (screen box, 2D and 3D bubbles) is hidden so the scene behind can be
+seen. They are not paused: lines keep typing and `skip_action` still advances.
+Releasing the button shows them again.
+
+From code, `DialogueView.set_all_hidden(true)` hides them all until
+`set_all_hidden(false)`, independently from the button, and
+`DialogueView.is_all_hidden()` tells whether they are hidden. Views created
+while hidden start hidden.
 
 ## Usage: timing and animation
 

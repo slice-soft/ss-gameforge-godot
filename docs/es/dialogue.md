@@ -20,6 +20,9 @@ caja de diálogo en pantalla o un globo sobre un personaje, en 2D o en 3D
 - `apply_theme()` reaplica `dialogue_theme`; `play()` ya lo llama.
 - `is_playing()` es true desde `play()` hasta `dialogue_finished`.
 - `skip()` completa la línea actual o avanza, como una pulsación de `skip_action`.
+- `back()` vuelve a mostrar la línea anterior; `@export back_action` lo hace desde la entrada.
+- `@export history: DialogueHistory` registra cada línea mostrada; se puede compartir entre vistas.
+- `@export hide_action` oculta todos los diálogos mientras se mantiene; `DialogueView.set_all_hidden()` desde código.
 - `@export layout`: `SCREEN` (caja abajo) o `BUBBLE` (globo).
 - `@export input_mode`: `AUTO`, `EVENTS`, `POLLING` o `NONE`.
 - `DialogueView3D` es un globo `Node3D` que envuelve un `DialogueView`.
@@ -179,6 +182,50 @@ func _process(_delta: float) -> void:
 	if player.is_action_just_pressed("talk"):
 		bubble.skip()
 ```
+
+## Uso: historial y volver atrás
+
+Cada línea que muestra una vista se escribe en su `history`, un recurso
+`DialogueHistory`. Asigna el mismo a varias vistas (caja de pantalla, globos 2D y
+3D) y junta a todos los personajes en un solo registro:
+
+```gdscript
+var log := DialogueHistory.new()
+
+func _ready() -> void:
+	$DialogueView.history = log
+	$Npc/DialogueView3D.history = log
+```
+
+Cada entrada es `{"text", "resource", "index"}`, con el texto tal como se mostró
+(traducido, con BBCode). El addon registra; tu juego decide cómo se ve el
+historial:
+
+```gdscript
+func open_backlog() -> void:
+	for entry in log.get_entries():
+		backlog_list.append_text(entry["text"] + "\n")
+```
+
+`max_entries` (por defecto 200, `0` = sin límite) descarta las más viejas,
+`clear()` lo vacía y `entry_added` se emite con cada línea nueva. Una vista sin
+historial asignado guarda el suyo propio.
+
+`back()`, o una pulsación de la acción opcional `back_action`, vuelve a mostrar la
+línea anterior de la secuencia en curso, ya completa. Al avanzar de nuevo esas
+líneas no se registran dos veces.
+
+## Uso: ocultar todos los diálogos
+
+Asigna una acción a `hide_action` y, mientras el jugador la mantenga presionada,
+todos los diálogos (caja de pantalla, globos 2D y 3D) se ocultan para que se vea
+la escena detrás. No se pausan: las líneas siguen escribiéndose y `skip_action`
+sigue avanzando. Al soltar el botón vuelven a verse.
+
+Desde código, `DialogueView.set_all_hidden(true)` los oculta todos hasta
+`set_all_hidden(false)`, sin depender del botón, y `DialogueView.is_all_hidden()`
+dice si están ocultos. Las vistas creadas mientras están ocultos arrancan
+ocultas.
 
 ## Uso: tiempos y animación
 
