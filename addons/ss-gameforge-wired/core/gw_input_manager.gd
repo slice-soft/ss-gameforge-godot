@@ -31,10 +31,9 @@ var players: Dictionary = {}
 var devices: Dictionary = {}
 ## Active rebind context. Empty when not listening.
 var _rebind_ctx: Dictionary = {}
-## Frame number of the last just_pressed per player/action. { player_id: { action_name: frame } }
-var _just_pressed: Dictionary = {}
-## Frame number of the last just_released per player/action. { player_id: { action_name: frame } }
-var _just_released: Dictionary = {}
+## Owner of each pad that disconnected while assigned, so it is handed back on
+## reconnect. { device_id: player_id }
+var _pad_owner_on_disconnect: Dictionary = {}
 
 
 # --- Lifecycle ---
@@ -49,20 +48,8 @@ func _input(event: InputEvent) -> void:
 		_process_rebind_input(event)
 		return
 
-	var frame := Engine.get_process_frames()
 	for player_id in players:
-		var player: GWPlayer = players[player_id]
-		var devs := player.get_active_device_ids()
-		for action_name in player.actions:
-			var action: GWAction = player.actions[action_name]
-			if action.was_just_pressed(devs, event):
-				if not _just_pressed.has(player_id):
-					_just_pressed[player_id] = {}
-				(_just_pressed[player_id] as Dictionary)[action_name] = frame
-			if action.was_just_released(devs, event):
-				if not _just_released.has(player_id):
-					_just_released[player_id] = {}
-				(_just_released[player_id] as Dictionary)[action_name] = frame
+		(players[player_id] as GWPlayer).feed_event(event)
 
 	if _is_join_press(event):
 		var dev_id := _get_event_device_id(event)
@@ -75,7 +62,8 @@ func _input(event: InputEvent) -> void:
 ## Initializes the system from a GWConfig resource created in the editor panel.
 ## Clears all existing templates and players before applying the new config.
 func load_config(config: GWConfig) -> void:
-	players.clear()
+	for player_id in players.keys():
+		remove_player(player_id)
 	_action_templates.clear()
 
 	for action_cfg in config.actions:
@@ -95,6 +83,7 @@ func load_config(config: GWConfig) -> void:
 		GWConfig.PlayerMode.SINGLE:
 			var p := create_player(0)
 			p.accepts_keyboard = true
+			p.accepts_any_gamepad = true
 		GWConfig.PlayerMode.LOCAL_COOP:
 			# Players are created but devices are assigned separately (e.g. lobby).
 			for i in config.max_local_players:
@@ -103,6 +92,7 @@ func load_config(config: GWConfig) -> void:
 			# One local player. Remote players are the game's responsibility.
 			var p := create_player(0)
 			p.accepts_keyboard = true
+			p.accepts_any_gamepad = true
 
 
 # --- Action template API ---
@@ -155,13 +145,19 @@ func get_actions_by_category() -> Dictionary:
 # --- Player management ---
 
 ## Creates and registers a player, cloning all current action templates into it.
+## If a player with this id already exists it is removed first (player_removed fires).
 func create_player(player_id: int, player_name: String = "") -> GWPlayer:
+	if players.has(player_id):
+		remove_player(player_id)
 	var player := GWPlayer.new()
 	player.player_id = player_id
 	player.player_name = player_name if not player_name.is_empty() else "Player %d" % (player_id + 1)
 	for action_name in _action_templates:
 		var template: GWAction = _action_templates[action_name]
 		player.actions[action_name] = template.duplicate_full()
+	player.free_gamepads_source = _free_gamepads_for.bind(player_id)
+	player.device_assigned.connect(_on_player_device_assigned.bind(player_id))
+	player.device_unassigned.connect(_on_player_device_unassigned.bind(player_id))
 	players[player_id] = player
 	player_created.emit(player_id)
 	return player
@@ -177,10 +173,15 @@ func get_default_player() -> GWPlayer:
 	return get_player(0)
 
 
-## Removes a player from the registry.
+## Removes a player from the registry and frees its gamepads.
 func remove_player(player_id: int) -> void:
 	if not players.has(player_id):
 		return
+	var player: GWPlayer = players[player_id]
+	player.unassign_all_gamepads()
+	for dev_id in _pad_owner_on_disconnect.keys():
+		if _pad_owner_on_disconnect[dev_id] == player_id:
+			_pad_owner_on_disconnect.erase(dev_id)
 	players.erase(player_id)
 	player_removed.emit(player_id)
 
@@ -204,25 +205,25 @@ func get_action_strength(action_name: String, player_id: int = 0) -> float:
 
 
 ## Returns true if the action was just pressed this frame (or in a specific event) for the given player.
-## When event is null, uses frame-state tracking — safe to call from _process().
+## When event is null, uses frame-state tracking — safe to call from _process() and _physics_process().
 func is_action_just_pressed(action_name: String, event: InputEvent = null, player_id: int = 0) -> bool:
-	if get_player(player_id) == null:
+	var player := get_player(player_id)
+	if player == null:
 		return false
 	if event == null:
-		var frame := (_just_pressed.get(player_id, {}) as Dictionary).get(action_name, -1) as int
-		return frame == Engine.get_process_frames()
-	return (get_player(player_id) as GWPlayer).is_action_just_pressed(action_name, event)
+		return player.is_action_just_pressed_this_frame(action_name)
+	return player.is_action_just_pressed(action_name, event)
 
 
 ## Returns true if the action was just released this frame (or in a specific event) for the given player.
-## When event is null, uses frame-state tracking — safe to call from _process().
+## When event is null, uses frame-state tracking — safe to call from _process() and _physics_process().
 func is_action_just_released(action_name: String, event: InputEvent = null, player_id: int = 0) -> bool:
-	if get_player(player_id) == null:
+	var player := get_player(player_id)
+	if player == null:
 		return false
 	if event == null:
-		var frame := (_just_released.get(player_id, {}) as Dictionary).get(action_name, -1) as int
-		return frame == Engine.get_process_frames()
-	return (get_player(player_id) as GWPlayer).is_action_just_released(action_name, event)
+		return player.is_action_just_released_this_frame(action_name)
+	return player.is_action_just_released(action_name, event)
 
 
 ## For AXIS actions: returns net value in [-1.0, 1.0] for the given player.
@@ -276,15 +277,15 @@ func get_connected_devices() -> Array:
 	return devices.values()
 
 
-## Returns connected gamepads that have no player assigned yet.
+## Returns connected gamepads that no player reads yet — neither assigned with
+## assign_gamepad() nor picked up by an accepts_any_gamepad player.
 func get_unassigned_gamepads() -> Array:
 	var result: Array = []
 	for dev_id in devices:
 		if (dev_id as int) < 0:
 			continue
-		var d: GWDevice = devices[dev_id]
-		if not d.is_assigned():
-			result.append(d)
+		if _is_device_unassigned(dev_id):
+			result.append(devices[dev_id])
 	return result
 
 
@@ -338,6 +339,7 @@ func reset_all_to_defaults() -> void:
 			var template: GWAction = _action_templates[action_name]
 			player.actions[action_name] = template.duplicate_full()
 			binding_remapped.emit(player_id, action_name)
+		player.clear_input_state()
 
 
 # --- Private: device scanning ---
@@ -352,14 +354,50 @@ func _on_joy_connection_changed(device_id: int, connected: bool) -> void:
 	if connected:
 		var d := GWDevice.create_gamepad(device_id)
 		devices[device_id] = d
+		# Hand the pad back to whoever owned it before it dropped.
+		var owner_id: int = _pad_owner_on_disconnect.get(device_id, -1)
+		_pad_owner_on_disconnect.erase(device_id)
+		if players.has(owner_id):
+			(players[owner_id] as GWPlayer).assign_gamepad(device_id)
 		device_connected.emit(device_id, d.device_name)
 	else:
 		for player_id in players:
-			(players[player_id] as GWPlayer).unassign_gamepad(device_id)
+			var player: GWPlayer = players[player_id]
+			if player.assigned_gamepads.has(device_id):
+				_pad_owner_on_disconnect[device_id] = player_id
+				player.unassign_gamepad(device_id)
+			player.clear_input_state()
 		if devices.has(device_id):
 			(devices[device_id] as GWDevice).is_connected = false
 			devices.erase(device_id)
 		device_disconnected.emit(device_id)
+
+
+func _on_player_device_assigned(device_id: int, player_id: int) -> void:
+	# Exclusive assignment: take the pad away from any other player.
+	for other_id in players:
+		if other_id != player_id:
+			(players[other_id] as GWPlayer).unassign_gamepad(device_id)
+	if devices.has(device_id):
+		(devices[device_id] as GWDevice).assigned_player = player_id
+
+
+func _on_player_device_unassigned(device_id: int, player_id: int) -> void:
+	if devices.has(device_id) and (devices[device_id] as GWDevice).assigned_player == player_id:
+		(devices[device_id] as GWDevice).assigned_player = -1
+
+
+## Connected pads an any-gamepad player may read: everything not assigned to
+## another player.
+func _free_gamepads_for(player_id: int) -> Array:
+	var result: Array = []
+	for dev_id in devices:
+		if (dev_id as int) < 0:
+			continue
+		var owner_id := (devices[dev_id] as GWDevice).assigned_player
+		if owner_id == -1 or owner_id == player_id:
+			result.append(dev_id)
+	return result
 
 
 # --- Private: device join detection ---
@@ -391,10 +429,7 @@ func _is_device_unassigned(device_id: int) -> bool:
 	if device_id == -99:
 		return false
 	for player_id in players:
-		var player: GWPlayer = players[player_id]
-		if device_id == -1 and player.accepts_keyboard:
-			return false
-		if device_id >= 0 and player.assigned_gamepads.has(device_id):
+		if (players[player_id] as GWPlayer).owns_device(device_id):
 			return false
 	return true
 

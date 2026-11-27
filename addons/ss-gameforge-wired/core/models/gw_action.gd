@@ -102,6 +102,29 @@ func get_axis(assigned_devices: Array) -> float:
 	return clampf(pos - neg, -1.0, 1.0)
 
 
+## Returns true if any binding on either side is held.
+## For BUTTON actions this equals is_pressed(); for AXIS actions it also counts the negative side.
+## This is the state just_pressed / just_released edges are computed from.
+func is_active(assigned_devices: Array) -> bool:
+	if is_pressed(assigned_devices):
+		return true
+	for binding in negative_bindings:
+		if binding.is_pressed(assigned_devices):
+			return true
+	return false
+
+
+## Returns true if the event comes from an input bound on either side of this action.
+func matches_event(event: InputEvent) -> bool:
+	for binding in bindings:
+		if binding.matches_input(event):
+			return true
+	for binding in negative_bindings:
+		if binding.matches_input(event):
+			return true
+	return false
+
+
 # --- Event-based evaluation ---
 
 ## Returns true if any binding matches a just-pressed InputEvent.
@@ -126,9 +149,12 @@ func was_just_released(assigned_devices: Array, event: InputEvent) -> bool:
 
 # --- Conflict detection ---
 
-## Returns true if any of this action's bindings would match the given event.
+## Returns true if any of this action's bindings (either side) would match the given event.
 func conflicts_with_event(event: InputEvent) -> bool:
 	for binding in bindings:
+		if binding.matches_event(event):
+			return true
+	for binding in negative_bindings:
 		if binding.matches_event(event):
 			return true
 	return false

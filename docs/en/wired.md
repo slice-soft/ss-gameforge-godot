@@ -92,8 +92,10 @@ func _process(_delta: float) -> void:
 
 Called without an event, `is_action_just_pressed()` and
 `is_action_just_released()` use per-frame tracking, so they are safe in
-`_process()`. Pass the event when you are inside `_input()` and want to react to
-that exact event:
+`_process()` and `_physics_process()`. A press counts once: holding a stick, key
+repeat, or pressing a second binding of an action that is already held does not
+fire it again, and the release fires only when no binding is held anymore. Pass
+the event when you are inside `_input()` and want to react to that exact event:
 
 ```gdscript
 func _input(event: InputEvent) -> void:
@@ -122,6 +124,17 @@ var p2 := wired.create_player(1, "Player 2")
 p2.assign_gamepad(0)
 ```
 
+Assigning a pad takes it away from whoever had it before. For a single player
+who should pick up any pad that gets plugged in, set `accepts_any_gamepad`
+instead — it reads every connected pad no other player has claimed. Loading a
+`SINGLE` or `ONLINE` config does this for player 0.
+
+```gdscript
+var p1 := wired.create_player(0, "Player 1")
+p1.accepts_keyboard = true
+p1.accepts_any_gamepad = true
+```
+
 Then pass the player id when reading:
 
 ```gdscript
@@ -145,7 +158,11 @@ func _on_device_pressed(device_id: int) -> void:
 ```
 
 `get_unassigned_gamepads()` lists the pads still free, and
-`device_connected` / `device_disconnected` cover hot-plugging.
+`device_connected` / `device_disconnected` cover hot-plugging. A pad that
+disconnects is handed back to the same player when it reconnects.
+
+> Calling `create_player()` with an id that already exists replaces that player
+> (`player_removed` fires first) and frees its pads.
 
 ## Usage: rebinding at runtime
 
