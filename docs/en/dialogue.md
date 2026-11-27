@@ -15,6 +15,7 @@ at a time, and animates a box in and out around them. The lines live in a
 - `play(resource)` starts a sequence. This is the primary entry point.
 - `stop()` cancels the current dialogue and plays the close animation.
 - `apply_theme()` re-applies `dialogue_theme`; `play()` already calls it.
+- `is_playing()` is true from `play()` until `dialogue_finished`.
 - Signals: `dialogue_started`, `line_changed(index)`, `dialogue_finished`.
 - `@export skip_action` is the input action that skips typing or advances. Defaults to `ui_accept`.
 - `DialogueResource` holds the lines and every timing/animation setting.
@@ -22,9 +23,17 @@ at a time, and animates a box in and out around them. The lines live in a
 
 ## Usage: adding the view
 
-Add a `DialogueView` node to your scene, or instance
-`res://addons/ss-gameforge-dialogue/scenes/dialogue_view.tscn`. It starts hidden
-and shows itself when `play()` runs.
+Instance `res://addons/ss-gameforge-dialogue/scenes/dialogue_view.tscn` in your
+scene. It starts hidden and shows itself when `play()` runs.
+
+The view fills its parent (the whole screen when it is not inside a container)
+and lets mouse input pass through. The box spans the width, sits
+`position_margin` above the bottom edge and grows upward to fit its text, which
+wraps onto as many lines as it needs. Put the view on a `CanvasLayer` if your
+game uses a `Camera2D`, so the camera does not move it.
+
+> Do not put the view inside a `VBoxContainer` or another container: the
+> container sizes it to its minimum and the box has nowhere to anchor.
 
 ## Usage: writing the content
 
@@ -73,8 +82,15 @@ resource.dialogues = pokemon_flavor_texts
 dialogue_view.play(resource)
 ```
 
-`play()` is ignored while another sequence is running, so it is safe to call
-from an input handler.
+`play()` is ignored while another sequence is running or closing, so it is safe
+to call from an input handler. `stop()` is safe at any point, including during
+the start delay or the open animation, and `dialogue_finished` fires once per
+sequence (not at all when `stop()` cancels during the start delay, since nothing
+opened).
+
+The press of `skip_action` that skips or advances is marked as handled, so it
+does not also reach gameplay. Presses during the open animation are swallowed,
+so the press that started a conversation never skips its first line.
 
 ## Usage: how lines advance
 
@@ -114,11 +130,18 @@ dialogue_view.apply_theme()
 
 The theme covers the box (`background_color`, `border_color`, `border_width`,
 `corner_radius`, `padding`), the text (`font_color`, `font_size`, `font`) and
-`position_margin`, the distance from the screen edges.
+`position_margin`, the distance from the view's left, right and bottom edges.
+
+For a textured box, set `background_texture` (drawn as a 9-slice, with
+`texture_patch_margin` pixels of unstretched border). `background_color` then
+tints the texture, and the border and corner settings are ignored.
 
 ## BBCode
 
-The reveal is BBCode-aware. `BBCodeParser` counts only visible characters and
-closes any tag left open mid-reveal, so a line like
-`Look for it in the [i]east wing[/i].` types out without leaking markup or
-breaking the italics halfway.
+The reveal is BBCode-aware: the whole line is laid out first and revealed with
+`RichTextLabel.visible_characters`, so a line like
+`Look for it in the [i]east wing[/i].` types out without leaking markup, and
+words never jump to the next line halfway through being typed.
+
+`BBCodeParser` is still available as a utility (`visible_length()`, `prefix()`)
+for your own code.

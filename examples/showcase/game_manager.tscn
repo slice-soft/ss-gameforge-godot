@@ -55,9 +55,7 @@ layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4
 
-[node name="DialogueView" parent="VBoxContainer" instance=ExtResource("7_qdbx1")]
-layout_mode = 2
-size_flags_horizontal = 4
+[node name="DialogueView" parent="." instance=ExtResource("7_qdbx1")]
 dialogue_theme = ExtResource("8_4j0un")
 resource = ExtResource("9_bq827")
 

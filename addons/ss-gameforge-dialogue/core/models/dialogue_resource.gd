@@ -13,7 +13,7 @@ class_name DialogueResource extends Resource
 ## In AUTO mode, only the typing animation can be interrupted; the hold timer is not skippable.
 @export var allow_skip: bool = true
 @export var advance_mode: DialogueConstants.AdvanceMode = DialogueConstants.AdvanceMode.HYBRID
-## Characters per second. Lower = slower reveal.
+## Seconds per visible character. Lower = faster reveal.
 @export_range(0.01, 0.5, 0.005) var text_speed: float = 0.075
 
 @export_group("Timing")
