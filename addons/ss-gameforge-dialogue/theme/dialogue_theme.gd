@@ -21,6 +21,9 @@ class_name DialogueTheme extends Resource
 @export var font: Font
 
 @export_group("Position")
-## Distance from the left, right and bottom edges of the DialogueView (the whole
-## screen by default). The box spans the width and grows upward to fit its text.
+## SCREEN layout: distance from the left, right and bottom edges of the
+## DialogueView (the whole screen by default). The box spans the width and grows
+## upward to fit its text.
 @export var position_margin: Vector2 = Vector2(24.0, 24.0)
+## BUBBLE layout: widest the bubble grows before its text wraps, in pixels.
+@export var bubble_max_width: float = 320.0

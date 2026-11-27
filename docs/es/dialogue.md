@@ -1,7 +1,9 @@
 # Dialogue
 
 `DialogueView` es un `Control` que escribe una secuencia de líneas carácter por
-carácter y anima una caja de entrada y salida alrededor. Las líneas viven en un
+carácter y anima una caja de entrada y salida alrededor. La caja puede ser una
+caja de diálogo en pantalla o un globo sobre un personaje, en 2D o en 3D
+(`DialogueView3D`). Las líneas viven en un
 `DialogueResource`, así que escribir contenido nunca implica tocar la vista.
 
 ## Cuándo usarlo
@@ -9,6 +11,7 @@ carácter y anima una caja de entrada y salida alrededor. Las líneas viven en u
 - Cuando necesitas una caja de diálogo con efecto máquina de escribir y animación de apertura y cierre.
 - Cuando quieres que el contenido sea data, editable como recurso.
 - Cuando tus líneas usan BBCode y deben revelarse correctamente, etiqueta por etiqueta.
+- Cuando quieres una caja fija abajo en la pantalla, globos en el mundo, o ambos.
 
 ## API clave
 
@@ -16,6 +19,10 @@ carácter y anima una caja de entrada y salida alrededor. Las líneas viven en u
 - `stop()` cancela el diálogo actual y reproduce la animación de cierre.
 - `apply_theme()` reaplica `dialogue_theme`; `play()` ya lo llama.
 - `is_playing()` es true desde `play()` hasta `dialogue_finished`.
+- `skip()` completa la línea actual o avanza, como una pulsación de `skip_action`.
+- `@export layout`: `SCREEN` (caja abajo) o `BUBBLE` (globo).
+- `@export input_mode`: `AUTO`, `EVENTS`, `POLLING` o `NONE`.
+- `DialogueView3D` es un globo `Node3D` que envuelve un `DialogueView`.
 - Señales: `dialogue_started`, `line_changed(index)`, `dialogue_finished`.
 - `@export skip_action` es la acción de entrada que salta el tipeo o avanza. Por defecto `ui_accept`.
 - `DialogueResource` contiene las líneas y toda la configuración de tiempos y animación.
@@ -106,6 +113,73 @@ primera línea.
 En todos los modos, presionar `skip_action` mientras una línea se está
 escribiendo la completa de inmediato — siempre que `allow_skip` sea true.
 
+## Uso: layouts — caja de pantalla o globo
+
+`layout` decide dónde va la caja. El mismo recurso, tema y API funcionan con los
+dos, así que un juego puede usar la caja de pantalla en las escenas de historia y
+globos para la charla de fondo.
+
+| Layout | Se ve como | Sirve para |
+|---|---|---|
+| `SCREEN` (por defecto) | Una caja a lo ancho de la parte de abajo de la vista, que crece hacia arriba. | Juegos con vista cenital o lateral y una caja de diálogo fija. |
+| `BUBBLE` | Una caja del tamaño de su texto (salta de línea en el `bubble_max_width` del tema), con su centro inferior en el origen de la vista. | Globos de diálogo sobre personajes, en 2D o 3D. |
+
+### Globo en 2D
+
+Pon un `DialogueView` con `layout = BUBBLE` bajo un `Node2D` (un `Marker2D` sobre
+la cabeza del personaje funciona bien). La cola del globo queda en ese punto y
+sigue al personaje y a la cámara:
+
+```gdscript
+@onready var bubble: DialogueView = $HeadMarker/DialogueView  # layout = BUBBLE
+
+func talk() -> void:
+	bubble.play(npc_lines)
+```
+
+### Globo en 3D: `DialogueView3D`
+
+`DialogueView3D` es un `Node3D` que arma solo el montaje en el mundo: un
+`SubViewport` transparente con un `DialogueView` en layout `BUBBLE`, mostrado en
+un `Sprite3D` con billboard, y el viewport se ajusta al globo en cada línea.
+Ponlo donde debe apuntar la cola y llama a `play()`:
+
+```gdscript
+@onready var bubble: DialogueView3D = $Head/DialogueView3D
+
+func talk() -> void:
+	bubble.play(npc_lines)
+```
+
+Reenvía `play()`, `stop()`, `skip()`, `is_playing()` y las tres señales;
+`get_view()` devuelve el `DialogueView` interno para lo demás. Opciones del
+sprite: `pixel_size` (unidades del mundo por píxel del globo, por defecto
+`0.01`), `billboard`, `no_depth_test` (activo por defecto, para que la geometría
+nunca tape el texto) y `fixed_size` (mismo tamaño en pantalla a cualquier
+distancia).
+
+## Uso: entrada
+
+`skip_action` se lee según `input_mode`:
+
+| Modo | Lee la entrada de |
+|---|---|
+| `AUTO` (por defecto) | Eventos de `_unhandled_input`, marcando la pulsación como manejada. Si la vista está en un `SubViewport` que no recibe eventos (uno usado como textura, como dentro de `DialogueView3D`), hace polling. |
+| `EVENTS` | Solo eventos. |
+| `POLLING` | `Input.is_action_just_pressed()` cada frame, en cualquier viewport. La pulsación no se consume. |
+| `NONE` | Nada: maneja el diálogo tú mismo con `skip()`. |
+
+`skip()` hace lo mismo que una pulsación: completa la línea que se está
+escribiendo o avanza a la siguiente (salvo en modo de avance `AUTO`). Devuelve
+`true` cuando hizo algo, así que puedes reenviar la entrada desde tu propio
+sistema, por ejemplo por jugador:
+
+```gdscript
+func _process(_delta: float) -> void:
+	if player.is_action_just_pressed("talk"):
+		bubble.skip()
+```
+
 ## Uso: tiempos y animación
 
 Todo vive en el recurso:
@@ -132,7 +206,8 @@ dialogue_view.apply_theme()
 El tema cubre la caja (`background_color`, `border_color`, `border_width`,
 `corner_radius`, `padding`), el texto (`font_color`, `font_size`, `font`) y
 `position_margin`, la distancia a los bordes izquierdo, derecho e inferior de la
-vista.
+vista (layout `SCREEN`), y `bubble_max_width`, donde el texto de un globo empieza
+a saltar de línea (layout `BUBBLE`, por defecto 320 px).
 
 Para una caja con textura, define `background_texture` (se dibuja como 9-slice,
 con `texture_patch_margin` píxeles de borde sin estirar). `background_color`
