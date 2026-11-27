@@ -43,7 +43,8 @@ el nombre del nodo hijo**. Define `default_state` en el inspector apuntando al
 estado que debe correr primero.
 
 > `controlled_node` se resuelve como el `owner` de la máquina — la raíz de la
-> escena en la que se guardó. Cada estado lo recibe antes de que se llame `start()`.
+> escena en la que se guardó — o como su padre cuando la máquina es ella misma la
+> raíz de la escena. Cada estado lo recibe antes de que se llame `start()`.
 
 ## Uso: escribir un estado
 
@@ -117,16 +118,22 @@ func _on_state_changed(from: String, to: String) -> void:
 	print("%s -> %s" % [from, to])
 ```
 
-`from` llega como string vacío en la primerísima transición, porque antes no
-había nada corriendo.
+El estado por defecto también la emite, con `from` como string vacío, porque
+antes no había nada corriendo. También aparece primero en `get_state_history()`.
 
 ## Comportamiento que conviene saber
 
 - **Volver a entrar al estado actual se ignora.** `change_to()` retorna temprano
   cuando el destino ya está activo, así que un estado no puede reiniciarse así.
-- **Un estado inexistente es un error, no un crash.** Un nombre desconocido llama
-  a `push_error()` y deja corriendo el estado actual.
+- **Un estado inexistente es un error, no un crash.** Un nombre desconocido, o un
+  hijo que no es `StateBase`, llama a `push_error()` y deja corriendo el estado
+  actual.
+- **Las transiciones pedidas durante una transición esperan su turno.** Un
+  `change_to()` llamado desde `start()` o `end()` corre justo después de que la
+  transición actual termine y emita `state_changed`, así que los listeners
+  siempre ven `A -> B` antes que `B -> C`.
 - **El estado por defecto arranca diferido.** `_ready()` difiere la primera
   transición, así que el árbol completo está disponible cuando corre `start()`.
+  Un `change_to()` hecho antes gana: entonces se salta el estado por defecto.
 - **`change_to_previous()` recuerda un solo paso atrás.** Es un intercambio, no
   una pila: úsalo para pantallas de pausa, no para historial de navegación profundo.
