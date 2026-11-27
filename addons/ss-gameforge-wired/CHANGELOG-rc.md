@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.0-rc.2](https://github.com/slice-soft/ss-gameforge-godot/compare/ss-gameforge-wired-v2.0.0-rc.1...ss-gameforge-wired-v2.0.0-rc.2) (2026-11-27)
+
+
+### Bug Fixes
+
+* **wired:** safe, unambiguous binding display names ([#66](https://github.com/slice-soft/ss-gameforge-godot/issues/66)) ([#67](https://github.com/slice-soft/ss-gameforge-godot/issues/67)) ([101766c](https://github.com/slice-soft/ss-gameforge-godot/commit/101766ccf0317b5c52e0ce3e2ed448b77c4a0c35))
+
 ## [2.0.0-rc.1](https://github.com/slice-soft/ss-gameforge-godot/compare/ss-gameforge-wired-v1.1.0...ss-gameforge-wired-v2.0.0-rc.1) (2026-11-27)
 
 
