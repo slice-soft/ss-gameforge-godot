@@ -202,12 +202,14 @@ func get_vector(neg_x: String, pos_x: String, neg_y: String, pos_y: String) -> V
 # --- Rebinding API ---
 
 ## Sets or replaces the binding at slot index for the named action.
-## Returns false if the action does not exist.
-func set_binding(action_name: String, index: int, binding: GWBinding) -> bool:
+## With negative = true it writes the negative side of an AXIS action.
+## Returns false if the action does not exist or the slot cannot be filled.
+func set_binding(action_name: String, index: int, binding: GWBinding, negative: bool = false) -> bool:
 	var action := _get_action(action_name)
 	if action == null:
 		return false
-	action.set_binding(index, binding)
+	if not action.set_binding(index, binding, negative):
+		return false
 	_held.erase(action_name)
 	action_rebound.emit(action_name)
 	return true

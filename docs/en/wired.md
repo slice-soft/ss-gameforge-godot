@@ -166,8 +166,9 @@ disconnects is handed back to the same player when it reconnects.
 
 ## Usage: rebinding at runtime
 
-Rebinding is a listen mode: the manager captures the next valid input and writes
-it into the slot you named.
+Rebinding is a listen mode: the manager captures the next valid input from a
+device **the player owns** and writes it into the slot you named. Input from
+other players' devices is ignored, so P1 cannot rebind with P2's pad.
 
 ```gdscript
 func _on_rebind_button_pressed(action_name: String) -> void:
@@ -183,14 +184,34 @@ func _on_remapped(player_id: int, action_name: String) -> void:
 ```
 
 `binding_index` is which slot to overwrite — `0` is the primary binding, `1` the
-first alternate, and so on.
+first alternate, and so on. A slot past `max_bindings` cannot be filled: the
+rebind is cancelled and `rebind_cancelled` fires instead of `binding_remapped`.
 
-While listening, `is_listening_for_rebind()` returns true. Use it to pause
-gameplay, otherwise the key being captured also triggers whatever it is bound to
-today. `cancel_rebind_listen()` aborts and emits `rebind_cancelled`.
+`start_rebind_listen()` returns `false` and does not listen when the player or
+action does not exist, or the action has `allow_rebind = false`.
 
-> Actions whose `allow_rebind` is false are meant to stay fixed; keep them out of
-> the rebind screen.
+While listening, `is_listening_for_rebind()` returns true and gameplay queries
+receive no input, so the key being captured does not also trigger whatever it is
+bound to today. `cancel_rebind_listen()` aborts and emits `rebind_cancelled`.
+
+Captured gamepad bindings are stored with `device_id = -1`, meaning "any pad
+this player owns", so they keep working after a reconnect or on another machine.
+
+To rebind the negative side of an axis action, pass `negative = true`:
+
+```gdscript
+GWInputManager.i.start_rebind_listen(0, "steer", 0, true)   # "steer left"
+```
+
+If the new input is already bound to other actions of the same player, the
+rebind is kept and `rebind_conflict(player_id, action_name, conflicting_actions)`
+fires so the screen can warn or swap:
+
+```gdscript
+GWInputManager.i.rebind_conflict.connect(func(pid, action, others):
+	warning.text = "%s is also used by %s" % [action, ", ".join(others)]
+)
+```
 
 ## Usage: saving bindings
 
