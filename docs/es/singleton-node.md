@@ -79,5 +79,31 @@ func _on_player_entered_boss_fight() -> void:
 	SingletonNode.ensure_for(BossFightDirector, get_tree().root, "BossFightDirector")
 ```
 
-> Nota: `ensure_for()` es seguro llamarlo múltiples veces.  
+> Nota: `ensure_for()` es seguro llamarlo múltiples veces, incluso en el mismo frame.
 > Si ya existe una instancia, no se creará un nuevo nodo.
+
+El nodo nuevo se registra de inmediato, así que `get_instance_for()` (y un
+accesor `.i`) lo devuelve al instante, pero se agrega a `root` de forma diferida:
+entra al árbol, y corre `_ready()`, al final del frame. El código que necesite el
+árbol (`get_tree()`, timers, hijos) debe esperar a eso.
+
+Si un nodo del mismo script que estaba puesto en una escena entra al árbol antes
+del agregado diferido, gana el de la escena (conserva su configuración del
+inspector) y el pendiente se descarta. Lee la instancia con `get_instance_for()`
+o `.i` en vez de guardar la referencia que devolvió `ensure_for()`.
+
+## Duplicados
+
+Cuando una segunda instancia entra al árbol mientras otra está activa, registra
+un aviso, deja de procesar y se libera al final del frame. Su `_ready()` igual
+corre una vez, así que protege la inicialización con `is_active_instance()`:
+
+```gdscript
+func _ready() -> void:
+	if not is_active_instance():
+		return
+	Input.joy_connection_changed.connect(_on_joy_changed)
+```
+
+Las subclases que sobrescriban `_enter_tree()` o `_exit_tree()` deben llamar a
+`super()`, o el registro nunca se actualiza.
