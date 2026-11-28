@@ -10,6 +10,8 @@ signal dialogue_started
 signal line_changed(index: int)
 ## Emitted once when the sequence ends and the close animation finishes.
 signal dialogue_finished
+## Emitted for each character revealed while a line types.
+signal character_typed(character: String)
 
 const _VIEW_SCENE := preload("res://addons/ss-gameforge-dialogue/scenes/dialogue_view.tscn")
 
@@ -28,6 +30,8 @@ const _VIEW_SCENE := preload("res://addons/ss-gameforge-dialogue/scenes/dialogue
 @export var hide_action: StringName = &""
 ## Where shown lines are recorded; share one to log every speaker together.
 @export var history: DialogueHistory
+## Audio bus the speakers' voice blips play on.
+@export var voice_bus: StringName = &"Master"
 
 @export_group("Sprite")
 ## World units per bubble pixel.
@@ -82,6 +86,7 @@ func _ready() -> void:
 	_view.back_action = back_action
 	_view.hide_action = hide_action
 	_view.history = history
+	_view.voice_bus = voice_bus
 	_viewport.add_child(_view)
 	history = _view.history
 	_view.set_anchors_preset(Control.PRESET_TOP_LEFT)
@@ -92,6 +97,7 @@ func _ready() -> void:
 		dialogue_started.emit()
 	)
 	_view.line_changed.connect(line_changed.emit)
+	_view.character_typed.connect(character_typed.emit)
 	_view.dialogue_finished.connect(func():
 		_viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
 		dialogue_finished.emit()
@@ -137,6 +143,11 @@ func back() -> bool:
 ## True from play() until dialogue_finished.
 func is_playing() -> bool:
 	return _view.is_playing()
+
+
+## Who says the line on screen, or null.
+func get_speaker() -> DialogueSpeaker:
+	return _view.get_speaker()
 
 
 ## The DialogueView inside the bubble, for anything not forwarded here.

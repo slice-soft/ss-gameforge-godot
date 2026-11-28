@@ -9,6 +9,9 @@ signal line_changed(index: int)
 signal dialogue_finished
 ## BUBBLE layout: emitted when the bubble's size changes (a new line was laid out).
 signal bubble_resized(size: Vector2)
+## Emitted for each character revealed while a line types (not when a skip
+## completes it). Use it for your own effects: mouth flaps, custom sounds.
+signal character_typed(character: String)
 
 ## How the box is laid out.
 enum Layout {
@@ -46,6 +49,8 @@ enum InputMode {
 ## Where shown lines are recorded. Assign one shared DialogueHistory to several
 ## views to gather every speaker in one log; when empty, the view keeps its own.
 @export var history: DialogueHistory
+## Audio bus the speakers' voice blips play on.
+@export var voice_bus: StringName = &"Master"
 
 const _GROUP := &"ss_gameforge_dialogue_views"
 static var _hidden_by_code := false
@@ -55,7 +60,10 @@ enum _State { IDLE, WAITING, OPENING, TYPING, HOLDING, CLOSING }
 
 @onready var _box: PanelContainer = $DialogueBox
 @onready var _margin: MarginContainer = $DialogueBox/Margin
-@onready var _label: RichTextLabel = $DialogueBox/Margin/DialogueText
+@onready var _content: HBoxContainer = $DialogueBox/Margin/Content
+@onready var _portrait: TextureRect = $DialogueBox/Margin/Content/Portrait
+@onready var _name_label: Label = $DialogueBox/Margin/Content/Column/SpeakerName
+@onready var _label: RichTextLabel = $DialogueBox/Margin/Content/Column/DialogueText
 @onready var _timer: Timer = $Timer
 
 var _resource: DialogueResource
@@ -68,6 +76,11 @@ var _current_line_visible_length: int = 0
 var _theme: DialogueTheme
 # Highest line index of the running sequence already written to history.
 var _recorded_upto: int = -1
+var _speaker: DialogueSpeaker
+var _voice: AudioStreamPlayer
+# Revealed characters of the current line, and how many counted for the voice.
+var _revealed: int = 0
+var _voiced: int = 0
 
 
 func _ready() -> void:
@@ -79,6 +92,10 @@ func _ready() -> void:
 	set_process_unhandled_input(false)
 	set_process(false)
 	_box.resized.connect(_place_bubble)
+	_voice = AudioStreamPlayer.new()
+	_voice.name = "Voice"
+	_voice.max_polyphony = 1
+	add_child(_voice)
 	add_to_group(_GROUP)
 	if history == null:
 		history = DialogueHistory.new()
@@ -122,6 +139,11 @@ func is_playing() -> bool:
 	return _state != _State.IDLE
 
 
+## Who says the line on screen, or null.
+func get_speaker() -> DialogueSpeaker:
+	return _speaker
+
+
 ## Shows the previous line of the running sequence again, fully revealed.
 ## Returns false on the first line or when no line is on screen.
 func back() -> bool:
@@ -132,7 +154,7 @@ func back() -> bool:
 		_current_tween = null
 	_timer.stop()
 	_idx -= 1
-	_set_current_line(_line_text(_idx))
+	_set_line(_idx)
 	_state = _State.TYPING
 	line_changed.emit(_idx)
 	_on_line_typed()
@@ -225,10 +247,15 @@ func apply_theme() -> void:
 
 	_label.add_theme_color_override("default_color", t.font_color)
 	_label.add_theme_font_size_override("normal_font_size", t.font_size)
+	_name_label.add_theme_font_size_override("font_size", t.name_font_size if t.name_font_size > 0 else t.font_size)
 	if t.font:
 		_label.add_theme_font_override("normal_font", t.font)
+		_name_label.add_theme_font_override("font", t.font)
 	else:
 		_label.remove_theme_font_override("normal_font")
+		_name_label.remove_theme_font_override("font")
+	_portrait.custom_minimum_size = t.portrait_size
+	_apply_speaker()
 
 	if layout == Layout.SCREEN:
 		# Full width minus the margins, bottom edge position_margin.y above the
@@ -253,7 +280,7 @@ func _start_dialogue() -> void:
 	_state = _State.OPENING
 	# Lay out the first line before opening, so the box opens at its final size.
 	if not _resource.dialogues.is_empty():
-		_set_current_line(_line_text(0))
+		_set_line(0)
 	_listen(true)
 	dialogue_started.emit()
 	_animate_box(
@@ -276,21 +303,53 @@ func _show_line() -> void:
 		_finish_dialogue()
 		return
 
-	_set_current_line(_line_text(_idx))
+	_set_line(_idx)
 	_state = _State.TYPING
 	if _idx > _recorded_upto:
 		_recorded_upto = _idx
-		history.add(_current_line, _resource, _idx)
+		history.add(_current_line, _resource, _idx, _speaker, _name_label.text if _name_label.visible else "")
 	line_changed.emit(_idx)
 
 	var duration := maxf(0.01, _resource.text_speed * float(_current_line_visible_length))
+	_revealed = 0
+	_voiced = 0
 	_current_tween = create_tween()
-	_current_tween.tween_property(_label, "visible_characters", _current_line_visible_length, duration)\
-		.from(0)
+	_current_tween.tween_method(_reveal, 0.0, float(_current_line_visible_length), duration)
 	_current_tween.finished.connect(func():
 		_current_tween = null
 		_on_line_typed()
 	)
+
+
+# Tween step: reveals up to `amount` characters, signalling each new one.
+func _reveal(amount: float) -> void:
+	var upto := mini(int(amount), _current_line_visible_length)
+	if upto <= _revealed:
+		return
+	_label.visible_characters = upto
+	var parsed := _label.get_parsed_text()
+	var voice_due := false
+	for i in range(_revealed, upto):
+		var ch := parsed[i] if i < parsed.length() else ""
+		character_typed.emit(ch)
+		if ch.strip_edges() != "":
+			_voiced += 1
+			if _speaker != null and (_voiced - 1) % maxi(_speaker.voice_every, 1) == 0:
+				voice_due = true
+	_revealed = upto
+	if voice_due:
+		_play_voice()
+
+
+func _play_voice() -> void:
+	if _speaker == null or _speaker.voice == null:
+		return
+	_voice.stream = _speaker.voice
+	_voice.bus = voice_bus
+	_voice.volume_db = _speaker.voice_volume_db
+	var v := _speaker.pitch_variation
+	_voice.pitch_scale = maxf(_speaker.voice_pitch * randf_range(1.0 - v, 1.0 + v), 0.01)
+	_voice.play()
 
 
 func _on_line_typed() -> void:
@@ -408,6 +467,28 @@ func _animate_box(
 	)
 
 
+# Puts line `index` and its speaker on screen, nothing revealed yet.
+func _set_line(index: int) -> void:
+	_speaker = _resource.get_speaker(index)
+	_apply_speaker()
+	_set_current_line(_line_text(index))
+
+
+# Shows the current speaker's name and portrait, or hides them.
+func _apply_speaker() -> void:
+	var shown_name := ""
+	if _speaker != null and _speaker.display_name != "":
+		shown_name = tr(_speaker.display_name) if _resource != null and _resource.use_translation else _speaker.display_name
+	_name_label.text = shown_name
+	_name_label.visible = shown_name != ""
+	var color := _theme.name_color if _theme != null else Color.WHITE
+	if _speaker != null and _speaker.name_color.a > 0.0:
+		color = _speaker.name_color
+	_name_label.add_theme_color_override("font_color", color)
+	_portrait.texture = _speaker.portrait if _speaker != null else null
+	_portrait.visible = _portrait.texture != null
+
+
 func _set_current_line(line: String) -> void:
 	_current_line = line
 	_label.text = line
@@ -426,6 +507,11 @@ func _fit_bubble() -> void:
 	var text_width := font.get_multiline_string_size(_label.get_parsed_text(), HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
 	var style := _box.get_theme_stylebox("panel")
 	var chrome := _theme.padding.x * 2.0 + style.get_margin(SIDE_LEFT) + style.get_margin(SIDE_RIGHT)
+	if _portrait.visible:
+		chrome += _portrait.custom_minimum_size.x + _content.get_theme_constant("separation")
+	if _name_label.visible:
+		# A long name widens a short line's bubble rather than overflowing it.
+		text_width = maxf(text_width, _name_label.get_minimum_size().x)
 	var room := maxf(_theme.bubble_max_width - chrome, 1.0)
 	if text_width > room:
 		_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -453,6 +539,8 @@ func _pivot() -> Vector2:
 
 
 func _clear_current_line() -> void:
+	_speaker = null
+	_apply_speaker()
 	_current_line = ""
 	_current_line_visible_length = 0
 	_label.text = ""

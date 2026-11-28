@@ -26,7 +26,8 @@ caja de diálogo en pantalla o un globo sobre un personaje, en 2D o en 3D
 - `@export layout`: `SCREEN` (caja abajo) o `BUBBLE` (globo).
 - `@export input_mode`: `AUTO`, `EVENTS`, `POLLING` o `NONE`.
 - `DialogueView3D` es un globo `Node3D` que envuelve un `DialogueView`.
-- Señales: `dialogue_started`, `line_changed(index)`, `dialogue_finished`.
+- `DialogueSpeaker` da a una línea nombre, retrato y voz; `get_speaker()` devuelve el actual.
+- Señales: `dialogue_started`, `line_changed(index)`, `character_typed(character)`, `dialogue_finished`.
 - `@export skip_action` es la acción de entrada que salta el tipeo o avanza. Por defecto `ui_accept`.
 - `DialogueResource` contiene las líneas y toda la configuración de tiempos y animación.
 - `DialogueConstants.AdvanceMode`: `AUTO`, `MANUAL`, `HYBRID`.
@@ -183,6 +184,42 @@ func _process(_delta: float) -> void:
 		bubble.skip()
 ```
 
+## Uso: personajes — nombre, retrato y voz
+
+Un recurso `DialogueSpeaker` describe quién habla. Crea uno por personaje y
+reutilízalo:
+
+| Campo | Hace |
+|---|---|
+| `display_name` | Se muestra sobre el texto (pasa por `tr()` si el recurso usa traducción). Vacío = sin nombre. |
+| `name_color` | Color del nombre. Transparente = el `name_color` del tema. |
+| `portrait` | Se dibuja al lado del texto con el `portrait_size` del tema. Vacío = sin retrato. |
+| `voice` | Sonido corto que suena mientras se escribe la línea. Vacío = silencio. |
+| `voice_pitch`, `pitch_variation` | Tono base y el cambio aleatorio por sonido (`0.05` = ±5%). |
+| `voice_every` | Suena cada esta cantidad de caracteres (sin contar espacios). |
+| `voice_volume_db` | Volumen del sonido. |
+
+Asigna `speaker` en el recurso para toda la secuencia, y `line_speakers` para
+cambiar de personaje en ciertas líneas (por índice; una entrada vacía o que falta
+usa `speaker`):
+
+```gdscript
+const ANA := preload("res://characters/ana_speaker.tres")
+const BO := preload("res://characters/bo_speaker.tres")
+
+resource.dialogues = ["¿Oíste eso?", "¿Oír qué?", "Nada, olvídalo."]
+resource.speaker = ANA
+resource.line_speakers = [null, BO]   # la línea 1 es de Bo, el resto de Ana
+```
+
+Funciona igual en la caja de pantalla y en los globos 2D/3D; el globo crece para
+que quepan el retrato y el nombre. La voz suena en `voice_bus` (por defecto
+`Master`). Saltar una línea la completa en silencio.
+
+Para cualquier otra cosa por carácter — mover la boca, tu propio sistema de
+sonido — conecta `character_typed(character)`, que se emite con cada carácter
+que aparece.
+
 ## Uso: historial y volver atrás
 
 Cada línea que muestra una vista se escribe en su `history`, un recurso
@@ -197,7 +234,7 @@ func _ready() -> void:
 	$Npc/DialogueView3D.history = log
 ```
 
-Cada entrada es `{"text", "resource", "index"}`, con el texto tal como se mostró
+Cada entrada es `{"text", "speaker", "speaker_name", "resource", "index"}`, con el texto tal como se mostró
 (traducido, con BBCode). El addon registra; tu juego decide cómo se ve el
 historial:
 
@@ -258,7 +295,8 @@ dialogue_view.apply_theme()
 ```
 
 El tema cubre la caja (`background_color`, `border_color`, `border_width`,
-`corner_radius`, `padding`), el texto (`font_color`, `font_size`, `font`) y
+`corner_radius`, `padding`), el texto (`font_color`, `font_size`, `font`), el personaje (`name_color`,
+`name_font_size`, `portrait_size`) y
 `position_margin`, la distancia a los bordes izquierdo, derecho e inferior de la
 vista (layout `SCREEN`), y `bubble_max_width`, donde el texto de un globo empieza
 a saltar de línea (layout `BUBBLE`, por defecto 320 px).
