@@ -38,6 +38,18 @@ enum InputMode {
 			apply_theme()
 ## Where skip_action is read from.
 @export var input_mode: InputMode = InputMode.AUTO
+## Optional input action that shows the previous line again (empty = off).
+@export var back_action: StringName = &""
+## Optional input action that hides every dialogue (all views, 2D and 3D) while
+## held. They keep running and skip_action still works (empty = off).
+@export var hide_action: StringName = &""
+## Where shown lines are recorded. Assign one shared DialogueHistory to several
+## views to gather every speaker in one log; when empty, the view keeps its own.
+@export var history: DialogueHistory
+
+const _GROUP := &"ss_gameforge_dialogue_views"
+static var _hidden_by_code := false
+static var _hidden_by_hold := false
 
 enum _State { IDLE, WAITING, OPENING, TYPING, HOLDING, CLOSING }
 
@@ -54,6 +66,8 @@ var _current_tween: Tween
 var _current_line: String = ""
 var _current_line_visible_length: int = 0
 var _theme: DialogueTheme
+# Highest line index of the running sequence already written to history.
+var _recorded_upto: int = -1
 
 
 func _ready() -> void:
@@ -65,6 +79,10 @@ func _ready() -> void:
 	set_process_unhandled_input(false)
 	set_process(false)
 	_box.resized.connect(_place_bubble)
+	add_to_group(_GROUP)
+	if history == null:
+		history = DialogueHistory.new()
+	_apply_hidden()
 	apply_theme()
 	if resource and resource.auto_start:
 		play(resource)
@@ -102,6 +120,54 @@ func stop() -> void:
 ## True from play() until dialogue_finished.
 func is_playing() -> bool:
 	return _state != _State.IDLE
+
+
+## Shows the previous line of the running sequence again, fully revealed.
+## Returns false on the first line or when no line is on screen.
+func back() -> bool:
+	if _state not in [_State.TYPING, _State.HOLDING] or _idx <= 0:
+		return false
+	if _current_tween != null:
+		_current_tween.kill()
+		_current_tween = null
+	_timer.stop()
+	_idx -= 1
+	_set_current_line(_line_text(_idx))
+	_state = _State.TYPING
+	line_changed.emit(_idx)
+	_on_line_typed()
+	return true
+
+
+## Hides (true) or shows again (false) every DialogueView and DialogueView3D.
+## Hidden dialogues keep running. Independent from hide_action.
+static func set_all_hidden(hidden: bool) -> void:
+	_hidden_by_code = hidden
+	_refresh_hidden()
+
+
+## True while dialogues are hidden, by set_all_hidden() or a held hide_action.
+static func is_all_hidden() -> bool:
+	return _hidden_by_code or _hidden_by_hold
+
+
+static func _set_hold_hidden(hidden: bool) -> void:
+	if _hidden_by_hold == hidden:
+		return
+	_hidden_by_hold = hidden
+	_refresh_hidden()
+
+
+static func _refresh_hidden() -> void:
+	var tree := Engine.get_main_loop() as SceneTree
+	if tree == null:
+		return
+	for view in tree.get_nodes_in_group(_GROUP):
+		(view as DialogueView)._apply_hidden()
+
+
+func _apply_hidden() -> void:
+	visible = not is_all_hidden()
 
 
 ## Does what a skip_action press does: completes the line being typed, or
@@ -183,6 +249,7 @@ func apply_theme() -> void:
 func _start_dialogue() -> void:
 	_box.visible = true
 	_idx = 0
+	_recorded_upto = -1
 	_state = _State.OPENING
 	# Lay out the first line before opening, so the box opens at its final size.
 	if not _resource.dialogues.is_empty():
@@ -211,6 +278,9 @@ func _show_line() -> void:
 
 	_set_current_line(_line_text(_idx))
 	_state = _State.TYPING
+	if _idx > _recorded_upto:
+		_recorded_upto = _idx
+		history.add(_current_line, _resource, _idx)
 	line_changed.emit(_idx)
 
 	var duration := maxf(0.01, _resource.text_speed * float(_current_line_visible_length))
@@ -269,18 +339,35 @@ func _on_timer_timeout() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed(skip_action) and skip():
 		get_viewport().set_input_as_handled()
+	elif _has_action(back_action) and event.is_action_pressed(back_action) and back():
+		get_viewport().set_input_as_handled()
 
 
 func _process(_delta: float) -> void:
-	if Input.is_action_just_pressed(skip_action):
-		skip()
+	if _uses_polling():
+		if Input.is_action_just_pressed(skip_action):
+			skip()
+		elif _has_action(back_action) and Input.is_action_just_pressed(back_action):
+			back()
+	if _has_action(hide_action):
+		_set_hold_hidden(Input.is_action_pressed(hide_action))
 
 
 # Turns the chosen input source on or off for the running sequence.
 func _listen(on: bool) -> void:
+	var reads_input := input_mode != InputMode.NONE
 	var polling := _uses_polling()
-	set_process_unhandled_input(on and input_mode != InputMode.NONE and not polling)
-	set_process(on and polling)
+	set_process_unhandled_input(on and reads_input and not polling)
+	set_process(on and reads_input and (polling or _has_action(hide_action)))
+	if _has_action(hide_action):
+		# On start, pick up a hold already in progress. On stop, release it: this
+		# view no longer watches the button, and any other view still running
+		# re-applies it on its next frame.
+		_set_hold_hidden(on and reads_input and Input.is_action_pressed(hide_action))
+
+
+static func _has_action(action: StringName) -> bool:
+	return action != &"" and InputMap.has_action(action)
 
 
 func _uses_polling() -> bool:

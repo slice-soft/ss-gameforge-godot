@@ -22,6 +22,12 @@ const _VIEW_SCENE := preload("res://addons/ss-gameforge-dialogue/scenes/dialogue
 @export var dialogue_theme: DialogueTheme
 ## Optional: assign a resource to auto-start when auto_start is true on it.
 @export var resource: DialogueResource
+## Optional input action that shows the previous line again (empty = off).
+@export var back_action: StringName = &""
+## Optional input action that hides every dialogue while held (empty = off).
+@export var hide_action: StringName = &""
+## Where shown lines are recorded; share one to log every speaker together.
+@export var history: DialogueHistory
 
 @export_group("Sprite")
 ## World units per bubble pixel.
@@ -73,7 +79,11 @@ func _ready() -> void:
 	_view.skip_action = skip_action
 	_view.input_mode = input_mode
 	_view.dialogue_theme = dialogue_theme
+	_view.back_action = back_action
+	_view.hide_action = hide_action
+	_view.history = history
 	_viewport.add_child(_view)
+	history = _view.history
 	_view.set_anchors_preset(Control.PRESET_TOP_LEFT)
 	_view.size = Vector2.ZERO
 	_view.bubble_resized.connect(_on_bubble_resized)
@@ -117,6 +127,11 @@ func stop() -> void:
 ## Completes the line being typed or advances. See DialogueView.skip().
 func skip() -> bool:
 	return _view.skip()
+
+
+## Shows the previous line again. See DialogueView.back().
+func back() -> bool:
+	return _view.back()
 
 
 ## True from play() until dialogue_finished.
