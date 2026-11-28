@@ -1,7 +1,9 @@
 # Dialogue
 
 `DialogueView` es un `Control` que escribe una secuencia de líneas carácter por
-carácter y anima una caja de entrada y salida alrededor. Las líneas viven en un
+carácter y anima una caja de entrada y salida alrededor. La caja puede ser una
+caja de diálogo en pantalla o un globo sobre un personaje, en 2D o en 3D
+(`DialogueView3D`). Las líneas viven en un
 `DialogueResource`, así que escribir contenido nunca implica tocar la vista.
 
 ## Cuándo usarlo
@@ -9,22 +11,40 @@ carácter y anima una caja de entrada y salida alrededor. Las líneas viven en u
 - Cuando necesitas una caja de diálogo con efecto máquina de escribir y animación de apertura y cierre.
 - Cuando quieres que el contenido sea data, editable como recurso.
 - Cuando tus líneas usan BBCode y deben revelarse correctamente, etiqueta por etiqueta.
+- Cuando quieres una caja fija abajo en la pantalla, globos en el mundo, o ambos.
 
 ## API clave
 
 - `play(resource)` inicia una secuencia. Es el punto de entrada principal.
 - `stop()` cancela el diálogo actual y reproduce la animación de cierre.
 - `apply_theme()` reaplica `dialogue_theme`; `play()` ya lo llama.
-- Señales: `dialogue_started`, `line_changed(index)`, `dialogue_finished`.
+- `is_playing()` es true desde `play()` hasta `dialogue_finished`.
+- `skip()` completa la línea actual o avanza, como una pulsación de `skip_action`.
+- `back()` vuelve a mostrar la línea anterior; `@export back_action` lo hace desde la entrada.
+- `@export history: DialogueHistory` registra cada línea mostrada; se puede compartir entre vistas.
+- `@export hide_action` oculta todos los diálogos mientras se mantiene; `DialogueView.set_all_hidden()` desde código.
+- `@export layout`: `SCREEN` (caja abajo) o `BUBBLE` (globo).
+- `@export input_mode`: `AUTO`, `EVENTS`, `POLLING` o `NONE`.
+- `DialogueView3D` es un globo `Node3D` que envuelve un `DialogueView`.
+- `DialogueSpeaker` da a una línea nombre, retrato y voz; `get_speaker()` devuelve el actual.
+- Señales: `dialogue_started`, `line_changed(index)`, `character_typed(character)`, `dialogue_finished`.
 - `@export skip_action` es la acción de entrada que salta el tipeo o avanza. Por defecto `ui_accept`.
 - `DialogueResource` contiene las líneas y toda la configuración de tiempos y animación.
 - `DialogueConstants.AdvanceMode`: `AUTO`, `MANUAL`, `HYBRID`.
 
 ## Uso: agregar la vista
 
-Añade un nodo `DialogueView` a tu escena, o instancia
-`res://addons/ss-gameforge-dialogue/scenes/dialogue_view.tscn`. Arranca oculto y
-se muestra solo cuando corre `play()`.
+Instancia `res://addons/ss-gameforge-dialogue/scenes/dialogue_view.tscn` en tu
+escena. Arranca oculto y se muestra solo cuando corre `play()`.
+
+La vista ocupa todo su padre (toda la pantalla si no está dentro de un
+contenedor) y deja pasar el mouse. La caja abarca el ancho, queda a
+`position_margin` del borde inferior y crece hacia arriba según su texto, que
+salta a tantas líneas como necesite. Pon la vista en un `CanvasLayer` si tu juego
+usa una `Camera2D`, para que la cámara no la mueva.
+
+> No la metas dentro de un `VBoxContainer` u otro contenedor: el contenedor la
+> reduce a su tamaño mínimo y la caja se queda sin dónde anclarse.
 
 ## Uso: escribir el contenido
 
@@ -73,8 +93,16 @@ resource.dialogues = pokemon_flavor_texts
 dialogue_view.play(resource)
 ```
 
-`play()` se ignora mientras otra secuencia está corriendo, así que es seguro
-llamarlo desde un manejador de entrada.
+`play()` se ignora mientras otra secuencia está corriendo o cerrándose, así que
+es seguro llamarlo desde un manejador de entrada. `stop()` es seguro en cualquier
+momento, incluso durante la espera inicial o la animación de apertura, y
+`dialogue_finished` se emite una vez por secuencia (ninguna si `stop()` cancela
+durante la espera inicial, porque no se abrió nada).
+
+La pulsación de `skip_action` que salta o avanza se marca como manejada, así que
+no le llega también al juego. Las pulsaciones durante la animación de apertura se
+descartan, así que la misma pulsación que inició la conversación nunca salta su
+primera línea.
 
 ## Uso: cómo avanzan las líneas
 
@@ -88,6 +116,160 @@ llamarlo desde un manejador de entrada.
 
 En todos los modos, presionar `skip_action` mientras una línea se está
 escribiendo la completa de inmediato — siempre que `allow_skip` sea true.
+
+## Uso: layouts — caja de pantalla o globo
+
+`layout` decide dónde va la caja. El mismo recurso, tema y API funcionan con los
+dos, así que un juego puede usar la caja de pantalla en las escenas de historia y
+globos para la charla de fondo.
+
+| Layout | Se ve como | Sirve para |
+|---|---|---|
+| `SCREEN` (por defecto) | Una caja a lo ancho de la parte de abajo de la vista, que crece hacia arriba. | Juegos con vista cenital o lateral y una caja de diálogo fija. |
+| `BUBBLE` | Una caja del tamaño de su texto (salta de línea en el `bubble_max_width` del tema), con su centro inferior en el origen de la vista. | Globos de diálogo sobre personajes, en 2D o 3D. |
+
+### Globo en 2D
+
+Pon un `DialogueView` con `layout = BUBBLE` bajo un `Node2D` (un `Marker2D` sobre
+la cabeza del personaje funciona bien). La cola del globo queda en ese punto y
+sigue al personaje y a la cámara:
+
+```gdscript
+@onready var bubble: DialogueView = $HeadMarker/DialogueView  # layout = BUBBLE
+
+func talk() -> void:
+	bubble.play(npc_lines)
+```
+
+### Globo en 3D: `DialogueView3D`
+
+`DialogueView3D` es un `Node3D` que arma solo el montaje en el mundo: un
+`SubViewport` transparente con un `DialogueView` en layout `BUBBLE`, mostrado en
+un `Sprite3D` con billboard, y el viewport se ajusta al globo en cada línea.
+Ponlo donde debe apuntar la cola y llama a `play()`:
+
+```gdscript
+@onready var bubble: DialogueView3D = $Head/DialogueView3D
+
+func talk() -> void:
+	bubble.play(npc_lines)
+```
+
+Reenvía `play()`, `stop()`, `skip()`, `is_playing()` y las tres señales;
+`get_view()` devuelve el `DialogueView` interno para lo demás. Opciones del
+sprite: `pixel_size` (unidades del mundo por píxel del globo, por defecto
+`0.01`), `billboard`, `no_depth_test` (activo por defecto, para que la geometría
+nunca tape el texto) y `fixed_size` (mismo tamaño en pantalla a cualquier
+distancia).
+
+## Uso: entrada
+
+`skip_action` se lee según `input_mode`:
+
+| Modo | Lee la entrada de |
+|---|---|
+| `AUTO` (por defecto) | Eventos de `_unhandled_input`, marcando la pulsación como manejada. Si la vista está en un `SubViewport` que no recibe eventos (uno usado como textura, como dentro de `DialogueView3D`), hace polling. |
+| `EVENTS` | Solo eventos. |
+| `POLLING` | `Input.is_action_just_pressed()` cada frame, en cualquier viewport. La pulsación no se consume. |
+| `NONE` | Nada: maneja el diálogo tú mismo con `skip()`. |
+
+`skip()` hace lo mismo que una pulsación: completa la línea que se está
+escribiendo o avanza a la siguiente (salvo en modo de avance `AUTO`). Devuelve
+`true` cuando hizo algo, así que puedes reenviar la entrada desde tu propio
+sistema, por ejemplo por jugador:
+
+```gdscript
+func _process(_delta: float) -> void:
+	if player.is_action_just_pressed("talk"):
+		bubble.skip()
+```
+
+## Uso: personajes — nombre, retrato y voz
+
+Un recurso `DialogueSpeaker` describe quién habla. Crea uno por personaje y
+reutilízalo:
+
+| Campo | Hace |
+|---|---|
+| `display_name` | Se muestra sobre el texto (pasa por `tr()` si el recurso usa traducción). Vacío = sin nombre. |
+| `name_color` | Color del nombre. Transparente = el `name_color` del tema. |
+| `portrait` | Se dibuja al lado del texto con el `portrait_size` del tema. Vacío = sin retrato. |
+| `voice` | Sonido corto que suena mientras se escribe la línea. Vacío = silencio. |
+| `voice_pitch`, `pitch_variation` | Tono base y el cambio aleatorio por sonido (`0.05` = ±5%). |
+| `voice_every` | Suena cada esta cantidad de caracteres (sin contar espacios). |
+| `voice_volume_db` | Volumen del sonido. |
+
+Asigna `speaker` en el recurso para toda la secuencia, y `line_speakers` para
+cambiar de personaje en ciertas líneas (por índice; una entrada vacía o que falta
+usa `speaker`):
+
+```gdscript
+const ANA := preload("res://characters/ana_speaker.tres")
+const BO := preload("res://characters/bo_speaker.tres")
+
+resource.dialogues = ["¿Oíste eso?", "¿Oír qué?", "Nada, olvídalo."]
+resource.speaker = ANA
+resource.line_speakers = [null, BO]   # la línea 1 es de Bo, el resto de Ana
+```
+
+Funciona igual en la caja de pantalla y en los globos 2D/3D; el globo crece para
+que quepan el retrato y el nombre. La voz suena en `voice_bus` (por defecto
+`Master`). Saltar una línea la completa en silencio.
+
+Para cualquier otra cosa por carácter — mover la boca, tu propio sistema de
+sonido — conecta `character_typed(character)`, que se emite con cada carácter
+que aparece.
+
+## Uso: historial y volver atrás
+
+Cada línea que muestra una vista se escribe en su `history`, un recurso
+`DialogueHistory`. Asigna el mismo a varias vistas (caja de pantalla, globos 2D y
+3D) y junta a todos los personajes en un solo registro:
+
+```gdscript
+var log := DialogueHistory.new()
+
+func _ready() -> void:
+	$DialogueView.history = log
+	$Npc/DialogueView3D.history = log
+```
+
+Cada entrada es `{"text", "speaker", "speaker_name", "resource", "index"}`, con el texto tal como se mostró
+(traducido, con BBCode). El addon registra; tu juego decide cómo se ve el
+historial:
+
+```gdscript
+func open_backlog() -> void:
+	for entry in log.get_entries():
+		backlog_list.append_text(entry["text"] + "\n")
+```
+
+`max_entries` (por defecto 200, `0` = sin límite) descarta las más viejas,
+`clear()` lo vacía y `entry_added` se emite con cada línea nueva. Una vista sin
+historial asignado guarda el suyo propio.
+
+`back()`, o una pulsación de la acción opcional `back_action`, vuelve a mostrar la
+línea anterior de la secuencia en curso, ya completa. Al avanzar de nuevo esas
+líneas no se registran dos veces.
+
+## Uso: ocultar todos los diálogos
+
+Asigna una acción a `hide_action` y, mientras el jugador la mantenga presionada,
+todos los diálogos (caja de pantalla, globos 2D y 3D) se ocultan para que se vea
+la escena detrás. No se pausan: las líneas siguen escribiéndose y `skip_action`
+sigue avanzando. Al soltar el botón vuelven a verse.
+
+Asigna `hide_action` a un botón cercano al de `skip_action`: el jugador lo
+mantiene para mirar, lo suelta para leer y presiona continuar como siempre.
+
+> Usa el ocultar con el modo de avance `MANUAL`. En `AUTO` y `HYBRID` el
+> temporizador sigue avanzando mientras el diálogo está oculto, así que el
+> jugador puede perderse líneas.
+
+Desde código, `DialogueView.set_all_hidden(true)` los oculta todos hasta
+`set_all_hidden(false)`, sin depender del botón, y `DialogueView.is_all_hidden()`
+dice si están ocultos. Las vistas creadas mientras están ocultos arrancan
+ocultas.
 
 ## Uso: tiempos y animación
 
@@ -113,12 +295,22 @@ dialogue_view.apply_theme()
 ```
 
 El tema cubre la caja (`background_color`, `border_color`, `border_width`,
-`corner_radius`, `padding`), el texto (`font_color`, `font_size`, `font`) y
-`position_margin`, la distancia a los bordes de la pantalla.
+`corner_radius`, `padding`), el texto (`font_color`, `font_size`, `font`), el personaje (`name_color`,
+`name_font_size`, `portrait_size`) y
+`position_margin`, la distancia a los bordes izquierdo, derecho e inferior de la
+vista (layout `SCREEN`), y `bubble_max_width`, donde el texto de un globo empieza
+a saltar de línea (layout `BUBBLE`, por defecto 320 px).
+
+Para una caja con textura, define `background_texture` (se dibuja como 9-slice,
+con `texture_patch_margin` píxeles de borde sin estirar). `background_color`
+entonces tiñe la textura, y el borde y las esquinas se ignoran.
 
 ## BBCode
 
-El revelado entiende BBCode. `BBCodeParser` cuenta solo los caracteres visibles y
-cierra cualquier etiqueta que quede abierta a mitad del revelado, así que una
-línea como `Búscalo en el [i]ala este[/i].` se escribe sin filtrar el marcado ni
-romper la cursiva a la mitad.
+El revelado entiende BBCode: la línea completa se acomoda primero y se revela con
+`RichTextLabel.visible_characters`, así que una línea como
+`Búscalo en el [i]ala este[/i].` se escribe sin filtrar el marcado, y las
+palabras nunca saltan a la siguiente línea a mitad del tipeo.
+
+`BBCodeParser` sigue disponible como utilidad (`visible_length()`, `prefix()`)
+para tu propio código.

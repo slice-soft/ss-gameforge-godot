@@ -16,6 +16,9 @@ signal device_disconnected(device_id: int)
 signal binding_remapped(player_id: int, action_name: String)
 signal rebind_listening(player_id: int, action_name: String, binding_index: int)
 signal rebind_cancelled(player_id: int)
+## Emitted after a rebind when the new input is also bound to other actions of
+## the same player. The rebind is kept; the game decides whether to swap or warn.
+signal rebind_conflict(player_id: int, action_name: String, conflicting_actions: Array[String])
 ## Emitted when an unassigned device produces a press. Use this to drive "press to join" logic.
 signal unassigned_device_pressed(device_id: int)
 
@@ -31,10 +34,9 @@ var players: Dictionary = {}
 var devices: Dictionary = {}
 ## Active rebind context. Empty when not listening.
 var _rebind_ctx: Dictionary = {}
-## Frame number of the last just_pressed per player/action. { player_id: { action_name: frame } }
-var _just_pressed: Dictionary = {}
-## Frame number of the last just_released per player/action. { player_id: { action_name: frame } }
-var _just_released: Dictionary = {}
+## Owner of each pad that disconnected while assigned, so it is handed back on
+## reconnect. { device_id: player_id }
+var _pad_owner_on_disconnect: Dictionary = {}
 
 
 # --- Lifecycle ---
@@ -49,20 +51,8 @@ func _input(event: InputEvent) -> void:
 		_process_rebind_input(event)
 		return
 
-	var frame := Engine.get_process_frames()
 	for player_id in players:
-		var player: GWPlayer = players[player_id]
-		var devs := player.get_active_device_ids()
-		for action_name in player.actions:
-			var action: GWAction = player.actions[action_name]
-			if action.was_just_pressed(devs, event):
-				if not _just_pressed.has(player_id):
-					_just_pressed[player_id] = {}
-				(_just_pressed[player_id] as Dictionary)[action_name] = frame
-			if action.was_just_released(devs, event):
-				if not _just_released.has(player_id):
-					_just_released[player_id] = {}
-				(_just_released[player_id] as Dictionary)[action_name] = frame
+		(players[player_id] as GWPlayer).feed_event(event)
 
 	if _is_join_press(event):
 		var dev_id := _get_event_device_id(event)
@@ -75,26 +65,39 @@ func _input(event: InputEvent) -> void:
 ## Initializes the system from a GWConfig resource created in the editor panel.
 ## Clears all existing templates and players before applying the new config.
 func load_config(config: GWConfig) -> void:
-	players.clear()
+	for player_id in players.keys():
+		remove_player(player_id)
 	_action_templates.clear()
 
 	for action_cfg in config.actions:
-		var a := define_action(
-			action_cfg.action_name,
-			action_cfg.display_name if not action_cfg.display_name.is_empty() else action_cfg.action_name,
-			action_cfg.default_bindings,
-			action_cfg.category,
-			action_cfg.max_bindings
-		)
+		var a: GWAction
+		if action_cfg.action_type == GWActionConfig.ActionType.AXIS:
+			a = define_axis(
+				action_cfg.action_name,
+				action_cfg.display_name,
+				action_cfg.default_bindings,
+				action_cfg.default_negative_bindings,
+				action_cfg.category,
+				action_cfg.max_bindings,
+				action_cfg.positive_name,
+				action_cfg.negative_name
+			)
+		else:
+			a = define_action(
+				action_cfg.action_name,
+				action_cfg.display_name,
+				action_cfg.default_bindings,
+				action_cfg.category,
+				action_cfg.max_bindings
+			)
 		a.allow_rebind = action_cfg.allow_rebind
-		a.action_type = action_cfg.action_type as GWAction.ActionType
-		a.positive_name = action_cfg.positive_name
-		a.negative_name = action_cfg.negative_name
+		a.description = action_cfg.description
 
 	match config.player_mode:
 		GWConfig.PlayerMode.SINGLE:
 			var p := create_player(0)
 			p.accepts_keyboard = true
+			p.accepts_any_gamepad = true
 		GWConfig.PlayerMode.LOCAL_COOP:
 			# Players are created but devices are assigned separately (e.g. lobby).
 			for i in config.max_local_players:
@@ -103,6 +106,7 @@ func load_config(config: GWConfig) -> void:
 			# One local player. Remote players are the game's responsibility.
 			var p := create_player(0)
 			p.accepts_keyboard = true
+			p.accepts_any_gamepad = true
 
 
 # --- Action template API ---
@@ -121,8 +125,30 @@ func define_action(
 	action.category = category
 	action.max_bindings = max_bindings
 	for b in default_bindings:
-		action.add_binding(b)
+		action.add_binding((b as GWBinding).duplicate() as GWBinding)
 	_action_templates[action_name] = action
+	return action
+
+
+## Registers an AXIS action template that reads back in [-1.0, 1.0] through
+## get_action_axis(). positive_bindings push toward +1.0, negative_bindings
+## toward -1.0. max_bindings caps each side separately.
+func define_axis(
+	action_name: String,
+	display_name: String = "",
+	positive_bindings: Array = [],
+	negative_bindings: Array = [],
+	category: String = "General",
+	max_bindings: int = 2,
+	positive_name: String = "",
+	negative_name: String = ""
+) -> GWAction:
+	var action := define_action(action_name, display_name, positive_bindings, category, max_bindings)
+	action.action_type = GWAction.ActionType.AXIS
+	action.positive_name = positive_name
+	action.negative_name = negative_name
+	for b in negative_bindings:
+		action.set_binding(action.negative_bindings.size(), (b as GWBinding).duplicate() as GWBinding, true)
 	return action
 
 
@@ -155,13 +181,19 @@ func get_actions_by_category() -> Dictionary:
 # --- Player management ---
 
 ## Creates and registers a player, cloning all current action templates into it.
+## If a player with this id already exists it is removed first (player_removed fires).
 func create_player(player_id: int, player_name: String = "") -> GWPlayer:
+	if players.has(player_id):
+		remove_player(player_id)
 	var player := GWPlayer.new()
 	player.player_id = player_id
 	player.player_name = player_name if not player_name.is_empty() else "Player %d" % (player_id + 1)
 	for action_name in _action_templates:
 		var template: GWAction = _action_templates[action_name]
 		player.actions[action_name] = template.duplicate_full()
+	player.free_gamepads_source = _free_gamepads_for.bind(player_id)
+	player.device_assigned.connect(_on_player_device_assigned.bind(player_id))
+	player.device_unassigned.connect(_on_player_device_unassigned.bind(player_id))
 	players[player_id] = player
 	player_created.emit(player_id)
 	return player
@@ -177,10 +209,15 @@ func get_default_player() -> GWPlayer:
 	return get_player(0)
 
 
-## Removes a player from the registry.
+## Removes a player from the registry and frees its gamepads.
 func remove_player(player_id: int) -> void:
 	if not players.has(player_id):
 		return
+	var player: GWPlayer = players[player_id]
+	player.unassign_all_gamepads()
+	for dev_id in _pad_owner_on_disconnect.keys():
+		if _pad_owner_on_disconnect[dev_id] == player_id:
+			_pad_owner_on_disconnect.erase(dev_id)
 	players.erase(player_id)
 	player_removed.emit(player_id)
 
@@ -204,25 +241,25 @@ func get_action_strength(action_name: String, player_id: int = 0) -> float:
 
 
 ## Returns true if the action was just pressed this frame (or in a specific event) for the given player.
-## When event is null, uses frame-state tracking — safe to call from _process().
+## When event is null, uses frame-state tracking — safe to call from _process() and _physics_process().
 func is_action_just_pressed(action_name: String, event: InputEvent = null, player_id: int = 0) -> bool:
-	if get_player(player_id) == null:
+	var player := get_player(player_id)
+	if player == null:
 		return false
 	if event == null:
-		var frame := (_just_pressed.get(player_id, {}) as Dictionary).get(action_name, -1) as int
-		return frame == Engine.get_process_frames()
-	return (get_player(player_id) as GWPlayer).is_action_just_pressed(action_name, event)
+		return player.is_action_just_pressed_this_frame(action_name)
+	return player.is_action_just_pressed(action_name, event)
 
 
 ## Returns true if the action was just released this frame (or in a specific event) for the given player.
-## When event is null, uses frame-state tracking — safe to call from _process().
+## When event is null, uses frame-state tracking — safe to call from _process() and _physics_process().
 func is_action_just_released(action_name: String, event: InputEvent = null, player_id: int = 0) -> bool:
-	if get_player(player_id) == null:
+	var player := get_player(player_id)
+	if player == null:
 		return false
 	if event == null:
-		var frame := (_just_released.get(player_id, {}) as Dictionary).get(action_name, -1) as int
-		return frame == Engine.get_process_frames()
-	return (get_player(player_id) as GWPlayer).is_action_just_released(action_name, event)
+		return player.is_action_just_released_this_frame(action_name)
+	return player.is_action_just_released(action_name, event)
 
 
 ## For AXIS actions: returns net value in [-1.0, 1.0] for the given player.
@@ -243,16 +280,29 @@ func get_vector(neg_x: String, pos_x: String, neg_y: String, pos_y: String, play
 
 # --- Rebinding API ---
 
-## Enters listen mode: the next valid InputEvent becomes the new binding.
-## While listening, is_listening_for_rebind() returns true — use it to pause gameplay.
-func start_rebind_listen(player_id: int, action_name: String, binding_index: int = 0) -> void:
+## Enters listen mode: the next input from a device the player owns becomes the
+## new binding. Set negative = true to capture the negative side of an AXIS action.
+## Returns false (and does not listen) if the player or action does not exist or
+## the action has allow_rebind = false.
+## While listening, is_listening_for_rebind() returns true — gameplay queries
+## receive no input until the rebind ends.
+func start_rebind_listen(player_id: int, action_name: String, binding_index: int = 0, negative: bool = false) -> bool:
+	var player := get_player(player_id)
+	if player == null or not player.actions.has(action_name):
+		push_warning("[GWInputManager] Cannot rebind '%s' for player %d: not found." % [action_name, player_id])
+		return false
+	if not (player.actions[action_name] as GWAction).allow_rebind:
+		push_warning("[GWInputManager] Action '%s' does not allow rebinding." % action_name)
+		return false
 	_rebind_ctx = {
 		"player_id": player_id,
 		"action_name": action_name,
 		"binding_index": binding_index,
+		"negative": negative,
 		"listening": true,
 	}
 	rebind_listening.emit(player_id, action_name, binding_index)
+	return true
 
 
 ## Cancels an active listen mode without applying any binding.
@@ -260,7 +310,7 @@ func cancel_rebind_listen() -> void:
 	if not _rebind_ctx.get("listening", false):
 		return
 	var pid: int = _rebind_ctx.get("player_id", 0)
-	_rebind_ctx = {}
+	_end_rebind()
 	rebind_cancelled.emit(pid)
 
 
@@ -276,15 +326,15 @@ func get_connected_devices() -> Array:
 	return devices.values()
 
 
-## Returns connected gamepads that have no player assigned yet.
+## Returns connected gamepads that no player reads yet — neither assigned with
+## assign_gamepad() nor picked up by an accepts_any_gamepad player.
 func get_unassigned_gamepads() -> Array:
 	var result: Array = []
 	for dev_id in devices:
 		if (dev_id as int) < 0:
 			continue
-		var d: GWDevice = devices[dev_id]
-		if not d.is_assigned():
-			result.append(d)
+		if _is_device_unassigned(dev_id):
+			result.append(devices[dev_id])
 	return result
 
 
@@ -338,6 +388,7 @@ func reset_all_to_defaults() -> void:
 			var template: GWAction = _action_templates[action_name]
 			player.actions[action_name] = template.duplicate_full()
 			binding_remapped.emit(player_id, action_name)
+		player.clear_input_state()
 
 
 # --- Private: device scanning ---
@@ -352,14 +403,50 @@ func _on_joy_connection_changed(device_id: int, connected: bool) -> void:
 	if connected:
 		var d := GWDevice.create_gamepad(device_id)
 		devices[device_id] = d
+		# Hand the pad back to whoever owned it before it dropped.
+		var owner_id: int = _pad_owner_on_disconnect.get(device_id, -1)
+		_pad_owner_on_disconnect.erase(device_id)
+		if players.has(owner_id):
+			(players[owner_id] as GWPlayer).assign_gamepad(device_id)
 		device_connected.emit(device_id, d.device_name)
 	else:
 		for player_id in players:
-			(players[player_id] as GWPlayer).unassign_gamepad(device_id)
+			var player: GWPlayer = players[player_id]
+			if player.assigned_gamepads.has(device_id):
+				_pad_owner_on_disconnect[device_id] = player_id
+				player.unassign_gamepad(device_id)
+			player.clear_input_state()
 		if devices.has(device_id):
 			(devices[device_id] as GWDevice).is_connected = false
 			devices.erase(device_id)
 		device_disconnected.emit(device_id)
+
+
+func _on_player_device_assigned(device_id: int, player_id: int) -> void:
+	# Exclusive assignment: take the pad away from any other player.
+	for other_id in players:
+		if other_id != player_id:
+			(players[other_id] as GWPlayer).unassign_gamepad(device_id)
+	if devices.has(device_id):
+		(devices[device_id] as GWDevice).assigned_player = player_id
+
+
+func _on_player_device_unassigned(device_id: int, player_id: int) -> void:
+	if devices.has(device_id) and (devices[device_id] as GWDevice).assigned_player == player_id:
+		(devices[device_id] as GWDevice).assigned_player = -1
+
+
+## Connected pads an any-gamepad player may read: everything not assigned to
+## another player.
+func _free_gamepads_for(player_id: int) -> Array:
+	var result: Array = []
+	for dev_id in devices:
+		if (dev_id as int) < 0:
+			continue
+		var owner_id := (devices[dev_id] as GWDevice).assigned_player
+		if owner_id == -1 or owner_id == player_id:
+			result.append(dev_id)
+	return result
 
 
 # --- Private: device join detection ---
@@ -391,10 +478,7 @@ func _is_device_unassigned(device_id: int) -> bool:
 	if device_id == -99:
 		return false
 	for player_id in players:
-		var player: GWPlayer = players[player_id]
-		if device_id == -1 and player.accepts_keyboard:
-			return false
-		if device_id >= 0 and player.assigned_gamepads.has(device_id):
+		if (players[player_id] as GWPlayer).owns_device(device_id):
 			return false
 	return true
 
@@ -414,13 +498,29 @@ func _process_rebind_input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 			return
 
-	# Build the new binding from the first valid event.
+	var pid: int = _rebind_ctx["player_id"]
+	var action_name: String = _rebind_ctx["action_name"]
+	var binding_index: int = _rebind_ctx["binding_index"]
+	var negative: bool = _rebind_ctx.get("negative", false)
+	var player := get_player(pid)
+	if player == null:
+		cancel_rebind_listen()
+		return
+
+	# Only the rebinding player's own devices can provide the new input.
+	var dev_id := _get_event_device_id(event)
+	if dev_id == -99 or not player.owns_device(dev_id):
+		return
+
+	# Build the new binding from the first valid event. Pad bindings are stored
+	# with device_id = -1 ("any pad this player owns") so they survive
+	# reconnects and other machines.
 	var new_binding: GWBinding = null
 
 	if event is InputEventKey:
 		var ev := event as InputEventKey
 		if ev.is_pressed() and not ev.is_echo():
-			new_binding = GWBinding.from_key(ev.keycode)
+			new_binding = GWBinding.from_key(ev.physical_keycode if ev.physical_keycode != KEY_NONE else ev.keycode)
 	elif event is InputEventMouseButton:
 		var ev := event as InputEventMouseButton
 		if ev.is_pressed():
@@ -428,24 +528,34 @@ func _process_rebind_input(event: InputEvent) -> void:
 	elif event is InputEventJoypadButton:
 		var ev := event as InputEventJoypadButton
 		if ev.is_pressed():
-			new_binding = GWBinding.from_joy_button(ev.button_index, ev.device)
+			new_binding = GWBinding.from_joy_button(ev.button_index)
 	elif event is InputEventJoypadMotion:
 		var ev := event as InputEventJoypadMotion
 		if absf(ev.axis_value) > 0.5:
 			var dir := 1.0 if ev.axis_value > 0.0 else -1.0
-			new_binding = GWBinding.from_joy_axis(ev.axis, dir, ev.device)
+			new_binding = GWBinding.from_joy_axis(ev.axis, dir)
 
 	if new_binding == null:
 		return
 
-	var pid: int = _rebind_ctx["player_id"]
-	var action_name: String = _rebind_ctx["action_name"]
-	var binding_index: int = _rebind_ctx["binding_index"]
-
-	var player := get_player(pid)
-	if player != null:
-		player.set_binding(action_name, binding_index, new_binding)
-		binding_remapped.emit(pid, action_name)
-
-	_rebind_ctx = {}
 	get_viewport().set_input_as_handled()
+	if not player.set_binding(action_name, binding_index, new_binding, negative):
+		push_warning("[GWInputManager] Slot %d of '%s' cannot be filled (max_bindings)." % [binding_index, action_name])
+		cancel_rebind_listen()
+		return
+
+	var conflicts: Array[String] = []
+	for other in player.find_conflicts(event, action_name):
+		conflicts.append(other.action_name)
+	_end_rebind()
+	binding_remapped.emit(pid, action_name)
+	if not conflicts.is_empty():
+		rebind_conflict.emit(pid, action_name, conflicts)
+
+
+## Leaves listen mode. Held state is reset because players received no input
+## while listening, so a release may have been missed.
+func _end_rebind() -> void:
+	_rebind_ctx = {}
+	for player_id in players:
+		(players[player_id] as GWPlayer).clear_input_state()

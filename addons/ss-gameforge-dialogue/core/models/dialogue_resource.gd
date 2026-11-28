@@ -6,6 +6,11 @@ class_name DialogueResource extends Resource
 @export_group("Content")
 @export var dialogues: Array[String] = ["dialogue_key_placeholder"]
 @export var use_translation: bool = true
+## Who speaks every line, unless line_speakers names someone else. Empty = no
+## name, portrait or voice.
+@export var speaker: DialogueSpeaker
+## Per-line speaker, by line index. A missing or empty entry uses speaker.
+@export var line_speakers: Array[DialogueSpeaker] = []
 
 @export_group("Behavior")
 @export var auto_start: bool = false
@@ -13,7 +18,7 @@ class_name DialogueResource extends Resource
 ## In AUTO mode, only the typing animation can be interrupted; the hold timer is not skippable.
 @export var allow_skip: bool = true
 @export var advance_mode: DialogueConstants.AdvanceMode = DialogueConstants.AdvanceMode.HYBRID
-## Characters per second. Lower = slower reveal.
+## Seconds per visible character. Lower = faster reveal.
 @export_range(0.01, 0.5, 0.005) var text_speed: float = 0.075
 
 @export_group("Timing")
@@ -31,3 +36,10 @@ class_name DialogueResource extends Resource
 @export_range(0.0, 2.0) var close_time: float = 0.20
 @export var close_transition: Tween.TransitionType = Tween.TRANS_BACK
 @export var close_ease: Tween.EaseType = Tween.EASE_IN_OUT
+
+
+## The speaker of line `index`: its line_speakers entry, or speaker.
+func get_speaker(index: int) -> DialogueSpeaker:
+	if index >= 0 and index < line_speakers.size() and line_speakers[index] != null:
+		return line_speakers[index]
+	return speaker

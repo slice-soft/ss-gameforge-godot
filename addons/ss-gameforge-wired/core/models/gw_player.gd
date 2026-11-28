@@ -15,8 +15,24 @@ var player_name: String = ""
 var assigned_gamepads: Array[int] = []
 ## Whether this player processes keyboard and mouse events.
 var accepts_keyboard: bool = false
+## Whether this player also reads every connected gamepad that no other player
+## has claimed with assign_gamepad(). Set for player 0 in SINGLE and ONLINE modes.
+var accepts_any_gamepad: bool = false
 ## Private copies of all registered actions keyed by action_name.
 var actions: Dictionary = {}
+
+## Returns the gamepad ids an any-gamepad player may read. GWInputManager
+## replaces it so pads owned by other players are left out.
+var free_gamepads_source: Callable = func() -> Array: return Input.get_connected_joypads()
+
+# Edge-detection state, fed by feed_event().
+var _held: Dictionary = {}            # action_name -> bool
+var _pressed_frames: Dictionary = {}  # action_name -> Vector2i(process_frame, physics_frame)
+var _released_frames: Dictionary = {} # action_name -> Vector2i(process_frame, physics_frame)
+var _last_event: InputEvent = null
+var _last_event_pressed: Array[String] = []
+var _last_event_released: Array[String] = []
+var _warned_missing: Dictionary = {}
 
 
 # --- Device API ---
@@ -44,18 +60,35 @@ func unassign_all_gamepads() -> void:
 
 ## Returns true if this player has at least one device (keyboard or any gamepad).
 func has_any_device() -> bool:
-	return accepts_keyboard or not assigned_gamepads.is_empty()
+	return accepts_keyboard or accepts_any_gamepad or not assigned_gamepads.is_empty()
 
 
 ## Returns the array of active device IDs for this player.
-## -1 is included when accepts_keyboard is true.
+## -1 is included when accepts_keyboard is true. With accepts_any_gamepad,
+## every free connected pad is included as well.
 func get_active_device_ids() -> Array:
 	var ids: Array = []
 	if accepts_keyboard:
 		ids.append(-1)
 	for dev_id in assigned_gamepads:
 		ids.append(dev_id)
+	if accepts_any_gamepad:
+		for dev_id in free_gamepads_source.call():
+			if not ids.has(dev_id):
+				ids.append(dev_id)
 	return ids
+
+
+## Returns true if input from the given device id belongs to this player.
+## -1 is keyboard/mouse; ids >= 0 are gamepads.
+func owns_device(device_id: int) -> bool:
+	if device_id == -1:
+		return accepts_keyboard
+	if device_id < -1:
+		return false
+	if assigned_gamepads.has(device_id):
+		return true
+	return accepts_any_gamepad and free_gamepads_source.call().has(device_id)
 
 
 # --- Gameplay API ---
@@ -84,26 +117,77 @@ func get_action_axis(action_name: String) -> float:
 	return action.get_axis(get_active_device_ids())
 
 
-## Returns true if the action was just pressed in the given event.
-## Only true when the event's device belongs to this player.
+## Returns true if this event turned the action on (it was not held before).
+## Only true when the event's device belongs to this player. Holding a stick,
+## key repeat and pressing a second binding of an already held action do not count.
 func is_action_just_pressed(action_name: String, event: InputEvent) -> bool:
-	if not _event_belongs_to_player(event):
+	if _get_action(action_name) == null:
 		return false
-	var action := _get_action(action_name)
-	if action == null:
-		return false
-	return action.was_just_pressed(get_active_device_ids(), event)
+	feed_event(event)
+	return _last_event_pressed.has(action_name)
 
 
-## Returns true if the action was just released in the given event.
+## Returns true if this event turned the action off (no binding is held anymore).
 ## Only true when the event's device belongs to this player.
 func is_action_just_released(action_name: String, event: InputEvent) -> bool:
+	if _get_action(action_name) == null:
+		return false
+	feed_event(event)
+	return _last_event_released.has(action_name)
+
+
+## Returns true if the action turned on during the current process frame, or
+## the current physics frame when called from _physics_process().
+func is_action_just_pressed_this_frame(action_name: String) -> bool:
+	return _is_current_frame(_pressed_frames.get(action_name, Vector2i(-1, -1)))
+
+
+## Returns true if the action turned off during the current process frame, or
+## the current physics frame when called from _physics_process().
+func is_action_just_released_this_frame(action_name: String) -> bool:
+	return _is_current_frame(_released_frames.get(action_name, Vector2i(-1, -1)))
+
+
+## Updates edge state from an input event. GWInputManager calls it for every
+## event; calling it again with the same event object is a no-op, so the
+## event-based queries above are safe whichever node sees the event first.
+func feed_event(event: InputEvent) -> void:
+	if event == _last_event:
+		return
+	_last_event = event
+	_last_event_pressed.clear()
+	_last_event_released.clear()
 	if not _event_belongs_to_player(event):
-		return false
-	var action := _get_action(action_name)
-	if action == null:
-		return false
-	return action.was_just_released(get_active_device_ids(), event)
+		return
+	var devs := get_active_device_ids()
+	# Physics frames advance at the start of each step, so an event handled
+	# outside a step belongs to the next one.
+	var physics := Engine.get_physics_frames() + (0 if Engine.is_in_physics_frame() else 1)
+	var frames := Vector2i(Engine.get_process_frames(), physics)
+	for a_name in actions:
+		var action: GWAction = actions[a_name]
+		if not action.matches_event(event):
+			continue
+		var was: bool = _held.get(a_name, false)
+		var now := action.is_active(devs)
+		if now and not was:
+			_mark_pressed(a_name, frames)
+		elif was and not now:
+			_mark_released(a_name, frames)
+		elif not now and event is InputEventMouseButton and event.is_pressed():
+			# Wheel "buttons" never read as held: count the press itself.
+			_mark_pressed(a_name, frames)
+		_held[a_name] = now
+
+
+## Forgets all held/edge state. Called when bindings or devices change under it.
+func clear_input_state() -> void:
+	_held.clear()
+	_pressed_frames.clear()
+	_released_frames.clear()
+	_last_event = null
+	_last_event_pressed.clear()
+	_last_event_released.clear()
 
 
 ## Returns a movement vector from four directional action names.
@@ -118,12 +202,15 @@ func get_vector(neg_x: String, pos_x: String, neg_y: String, pos_y: String) -> V
 # --- Rebinding API ---
 
 ## Sets or replaces the binding at slot index for the named action.
-## Returns false if the action does not exist.
-func set_binding(action_name: String, index: int, binding: GWBinding) -> bool:
+## With negative = true it writes the negative side of an AXIS action.
+## Returns false if the action does not exist or the slot cannot be filled.
+func set_binding(action_name: String, index: int, binding: GWBinding, negative: bool = false) -> bool:
 	var action := _get_action(action_name)
 	if action == null:
 		return false
-	action.set_binding(index, binding)
+	if not action.set_binding(index, binding, negative):
+		return false
+	_held.erase(action_name)
 	action_rebound.emit(action_name)
 	return true
 
@@ -134,6 +221,7 @@ func clear_action_bindings(action_name: String) -> void:
 	if action == null:
 		return
 	action.clear_bindings()
+	_held.erase(action_name)
 	action_rebound.emit(action_name)
 
 
@@ -172,13 +260,17 @@ func to_dict() -> Dictionary:
 		"player_id": player_id,
 		"player_name": player_name,
 		"accepts_keyboard": accepts_keyboard,
+		"accepts_any_gamepad": accepts_any_gamepad,
 		"actions": action_dicts,
 	}
 
 
-## Applies serialized bindings from a Dictionary without recreating the player.
-## Emits action_rebound for each restored action.
+## Applies serialized bindings and keyboard/any-gamepad flags from a Dictionary
+## without recreating the player. Gamepad assignments are not restored: device
+## ids change between sessions. Emits action_rebound for each restored action.
 func apply_dict(d: Dictionary) -> void:
+	accepts_keyboard = d.get("accepts_keyboard", accepts_keyboard)
+	accepts_any_gamepad = d.get("accepts_any_gamepad", accepts_any_gamepad)
 	var saved_actions: Dictionary = d.get("actions", {})
 	for a_name in saved_actions:
 		if not actions.has(a_name):
@@ -189,7 +281,8 @@ func apply_dict(d: Dictionary) -> void:
 		for b_dict in saved_actions[a_name].get("bindings", []):
 			action.add_binding(GWBinding.from_dict(b_dict))
 		for b_dict in saved_actions[a_name].get("negative_bindings", []):
-			action.negative_bindings.append(GWBinding.from_dict(b_dict))
+			action.set_binding(action.negative_bindings.size(), GWBinding.from_dict(b_dict), true)
+		_held.erase(a_name)
 		action_rebound.emit(a_name)
 
 
@@ -197,7 +290,9 @@ func apply_dict(d: Dictionary) -> void:
 
 func _get_action(action_name: String) -> GWAction:
 	if not actions.has(action_name):
-		push_warning("[GWPlayer] Action not found: %s" % action_name)
+		if not _warned_missing.has(action_name):
+			_warned_missing[action_name] = true
+			push_warning("[GWPlayer] Action not found: %s" % action_name)
 		return null
 	return actions[action_name] as GWAction
 
@@ -205,8 +300,22 @@ func _get_action(action_name: String) -> GWAction:
 func _event_belongs_to_player(event: InputEvent) -> bool:
 	if event is InputEventKey or event is InputEventMouseButton:
 		return accepts_keyboard
-	if event is InputEventJoypadButton:
-		return assigned_gamepads.has((event as InputEventJoypadButton).device)
-	if event is InputEventJoypadMotion:
-		return assigned_gamepads.has((event as InputEventJoypadMotion).device)
+	if event is InputEventJoypadButton or event is InputEventJoypadMotion:
+		return owns_device(event.device)
 	return false
+
+
+func _mark_pressed(a_name: String, frames: Vector2i) -> void:
+	_pressed_frames[a_name] = frames
+	_last_event_pressed.append(a_name)
+
+
+func _mark_released(a_name: String, frames: Vector2i) -> void:
+	_released_frames[a_name] = frames
+	_last_event_released.append(a_name)
+
+
+static func _is_current_frame(frames: Vector2i) -> bool:
+	if Engine.is_in_physics_frame():
+		return frames.y == Engine.get_physics_frames()
+	return frames.x == Engine.get_process_frames()

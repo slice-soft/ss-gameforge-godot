@@ -32,35 +32,24 @@ static func apply_position(
 		ToastConstants.ToastPosition.BOTTOM_RIGHT:
 			_set_anchors_and_offsets(panel, 1.0, 1.0, -size.x - margin.x + stack_offset.x, -size.y - margin.y + stack_offset.y, size)
 
-# Calculates the vertical offset for stacked toasts in the same position.
+# Calculates the vertical offset of a toast from the heights of the toasts
+# stacked before it at the same position.
 static func calculate_stack_offset(
 	position: ToastConstants.ToastPosition,
-	stack_index: int,
-	panel_size: Vector2,
+	heights_before: Array[float],
 	spacing: float
 ) -> Vector2:
-	if stack_index <= 0:
-		return Vector2.ZERO
-	
-	var offset_amount := (panel_size.y + spacing) * float(stack_index)
-	
+	var offset_amount := 0.0
+	for h in heights_before:
+		offset_amount += h + spacing
+
 	match position:
-		ToastConstants.ToastPosition.TOP_LEFT, \
-		ToastConstants.ToastPosition.TOP_CENTER, \
-		ToastConstants.ToastPosition.TOP_RIGHT:
-			return Vector2(0.0, offset_amount)
-		
 		ToastConstants.ToastPosition.BOTTOM_LEFT, \
 		ToastConstants.ToastPosition.BOTTOM_CENTER, \
 		ToastConstants.ToastPosition.BOTTOM_RIGHT:
 			return Vector2(0.0, -offset_amount)
-		
-		ToastConstants.ToastPosition.CENTER_LEFT, \
-		ToastConstants.ToastPosition.CENTER, \
-		ToastConstants.ToastPosition.CENTER_RIGHT:
-			return Vector2(0.0, offset_amount)
-	
-	return Vector2.ZERO
+
+	return Vector2(0.0, offset_amount)
 
 # Helper to set anchors and offsets in one place.
 static func _set_anchors_and_offsets(

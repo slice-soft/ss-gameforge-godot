@@ -9,7 +9,7 @@
       "pull-request-title-pattern": "chore(release): release ${version}",
       "versioning": "prerelease",
       "prerelease": true,
-      "prerelease-type": "rc"
+      "prerelease-type": "rc.1"
     },
     "addons/ss-gameforge-state-machine": {
       "release-type": "simple",
@@ -19,7 +19,7 @@
       "pull-request-title-pattern": "chore(release): release ${version}",
       "versioning": "prerelease",
       "prerelease": true,
-      "prerelease-type": "rc"
+      "prerelease-type": "rc.1"
     },
     "addons/ss-gameforge-dialogue": {
       "release-type": "simple",
@@ -29,7 +29,7 @@
       "pull-request-title-pattern": "chore(release): release ${version}",
       "versioning": "prerelease",
       "prerelease": true,
-      "prerelease-type": "rc"
+      "prerelease-type": "rc.1"
     },
     "addons/ss-gameforge-toast": {
       "release-type": "simple",
@@ -39,7 +39,7 @@
       "pull-request-title-pattern": "chore(release): release ${version}",
       "versioning": "prerelease",
       "prerelease": true,
-      "prerelease-type": "rc"
+      "prerelease-type": "rc.1"
     },
     "addons/ss-gameforge-wired": {
       "release-type": "simple",
@@ -49,7 +49,7 @@
       "pull-request-title-pattern": "chore(release): release ${version}",
       "versioning": "prerelease",
       "prerelease": true,
-      "prerelease-type": "rc"
+      "prerelease-type": "rc.1"
     },
     "addons/ss-gameforge-event-bus": {
       "release-type": "simple",
@@ -59,7 +59,7 @@
       "pull-request-title-pattern": "chore(release): release ${version}",
       "versioning": "prerelease",
       "prerelease": true,
-      "prerelease-type": "rc",
+      "prerelease-type": "rc.1",
       "initial-version": "0.1.0-rc.1"
     }
   }

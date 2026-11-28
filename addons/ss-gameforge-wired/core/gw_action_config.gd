@@ -28,5 +28,8 @@ enum ActionType { BUTTON, AXIS }
 ## If false, the action cannot be rebound at runtime.
 @export var allow_rebind: bool = true
 ## Default bindings cloned into each player on load_config().
+## For AXIS actions these push toward +1.0.
 ## Configure these in the Godot inspector or via code after load_config().
 @export var default_bindings: Array[GWBinding] = []
+## AXIS only — default bindings that push toward -1.0.
+@export var default_negative_bindings: Array[GWBinding] = []

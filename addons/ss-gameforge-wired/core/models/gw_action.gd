@@ -12,11 +12,11 @@ enum ActionType { BUTTON, AXIS }
 
 ## Internal identifier used in gameplay code (e.g. "jump", "attack").
 var action_name: String = ""
-## Label shown in the rebind UI (e.g. "Jump", "Attack").
+## Label for your rebind menu (e.g. "Jump", "Attack").
 var display_name: String = ""
-## Optional tooltip shown in the rebind UI.
+## Optional tooltip for your rebind menu.
 var description: String = ""
-## Groups this action with others in the UI (e.g. "Movement", "Combat").
+## Groups this action with others in your menus (e.g. "Movement", "Combat").
 var category: String = "General"
 ## Maximum number of simultaneous bindings. 0 = unlimited.
 var max_bindings: int = 2
@@ -26,7 +26,7 @@ var action_type: ActionType = ActionType.BUTTON
 var positive_name: String = ""
 ## Axis only — label for the negative direction (e.g. "left", "down").
 var negative_name: String = ""
-## If false, this action does not appear as editable in the rebind UI.
+## If false, start_rebind_listen() refuses this action; hide it from your rebind menu.
 var allow_rebind: bool = true
 ## Active bindings list (positive direction for AXIS actions).
 var bindings: Array[GWBinding] = []
@@ -46,16 +46,21 @@ func add_binding(binding: GWBinding) -> bool:
 
 
 ## Sets or replaces the binding at the given slot index.
-## If index equals the current size and capacity allows, the binding is appended instead.
-func set_binding(index: int, binding: GWBinding) -> void:
+## An index at or past the end appends, if max_bindings allows.
+## With negative = true it writes the negative side of an AXIS action.
+## Returns false if the binding could not be stored.
+func set_binding(index: int, binding: GWBinding, negative: bool = false) -> bool:
 	if index < 0:
-		return
-	if index < bindings.size():
-		bindings[index] = binding
-		binding_added.emit(binding)
-	elif max_bindings == 0 or bindings.size() < max_bindings:
-		bindings.append(binding)
-		binding_added.emit(binding)
+		return false
+	var list := negative_bindings if negative else bindings
+	if index < list.size():
+		list[index] = binding
+	elif max_bindings == 0 or list.size() < max_bindings:
+		list.append(binding)
+	else:
+		return false
+	binding_added.emit(binding)
+	return true
 
 
 ## Removes the binding at the given slot index.
@@ -102,6 +107,29 @@ func get_axis(assigned_devices: Array) -> float:
 	return clampf(pos - neg, -1.0, 1.0)
 
 
+## Returns true if any binding on either side is held.
+## For BUTTON actions this equals is_pressed(); for AXIS actions it also counts the negative side.
+## This is the state just_pressed / just_released edges are computed from.
+func is_active(assigned_devices: Array) -> bool:
+	if is_pressed(assigned_devices):
+		return true
+	for binding in negative_bindings:
+		if binding.is_pressed(assigned_devices):
+			return true
+	return false
+
+
+## Returns true if the event comes from an input bound on either side of this action.
+func matches_event(event: InputEvent) -> bool:
+	for binding in bindings:
+		if binding.matches_input(event):
+			return true
+	for binding in negative_bindings:
+		if binding.matches_input(event):
+			return true
+	return false
+
+
 # --- Event-based evaluation ---
 
 ## Returns true if any binding matches a just-pressed InputEvent.
@@ -126,9 +154,12 @@ func was_just_released(assigned_devices: Array, event: InputEvent) -> bool:
 
 # --- Conflict detection ---
 
-## Returns true if any of this action's bindings would match the given event.
+## Returns true if any of this action's bindings (either side) would match the given event.
 func conflicts_with_event(event: InputEvent) -> bool:
 	for binding in bindings:
+		if binding.matches_event(event):
+			return true
+	for binding in negative_bindings:
 		if binding.matches_event(event):
 			return true
 	return false

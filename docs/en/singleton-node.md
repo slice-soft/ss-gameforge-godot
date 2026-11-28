@@ -78,5 +78,32 @@ func _ready() -> void:
 func _on_player_entered_boss_fight() -> void:
 	SingletonNode.ensure_for(BossFightDirector, get_tree().root, "BossFightDirector")
 ```
-> Note: `ensure_for()` is safe to call multiple times.  
+> Note: `ensure_for()` is safe to call multiple times, even in the same frame.
 > If an instance already exists, no new node will be created.
+
+The new node is registered right away, so `get_instance_for()` (and an `.i`
+accessor) returns it immediately, but it is added to `root` deferred: it enters
+the tree, and runs `_ready()`, at the end of the frame. Code that needs the tree
+(`get_tree()`, timers, children) should wait for that.
+
+If a node of the same script that was placed in a scene enters the tree before
+the deferred add happens, the scene node wins (it keeps its inspector settings)
+and the pending one is discarded. Read the instance back through
+`get_instance_for()` or `.i` rather than keeping the reference `ensure_for()`
+returned.
+
+## Duplicates
+
+When a second instance enters the tree while one is active, it logs a warning,
+stops processing and is freed at the end of the frame. Its `_ready()` still
+runs once, so guard one-time setup with `is_active_instance()`:
+
+```gdscript
+func _ready() -> void:
+	if not is_active_instance():
+		return
+	Input.joy_connection_changed.connect(_on_joy_changed)
+```
+
+Subclasses that override `_enter_tree()` or `_exit_tree()` must call `super()`,
+or the registry is never updated.

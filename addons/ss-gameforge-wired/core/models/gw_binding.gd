@@ -10,7 +10,8 @@ enum BindingType { KEY, MOUSE_BUTTON, JOY_BUTTON, JOY_AXIS }
 @export var type: BindingType = BindingType.KEY
 ## Device ID. -1 = any gamepad or keyboard/mouse. >= 0 = specific gamepad.
 @export var device_id: int = -1
-## Keyboard key (only when type == KEY).
+## Keyboard key (only when type == KEY), as a physical position on a US QWERTY
+## layout: KEY_W is the key above S on any layout (Z on AZERTY).
 @export var key_code: Key = KEY_NONE
 ## Mouse button (only when type == MOUSE_BUTTON).
 @export var mouse_button: MouseButton = MOUSE_BUTTON_NONE
@@ -26,7 +27,7 @@ enum BindingType { KEY, MOUSE_BUTTON, JOY_BUTTON, JOY_AXIS }
 
 # --- Factories ---
 
-## Creates a binding from a keyboard key.
+## Creates a binding from a keyboard key position (physical keycode, US QWERTY names).
 static func from_key(p_key_code: Key) -> GWBinding:
 	var b := GWBinding.new()
 	b.type = BindingType.KEY
@@ -68,7 +69,7 @@ func matches_event(event: InputEvent) -> bool:
 	match type:
 		BindingType.KEY:
 			if event is InputEventKey:
-				return (event as InputEventKey).keycode == key_code
+				return (event as InputEventKey).physical_keycode == key_code
 		BindingType.MOUSE_BUTTON:
 			if event is InputEventMouseButton:
 				return (event as InputEventMouseButton).button_index == mouse_button
@@ -84,6 +85,17 @@ func matches_event(event: InputEvent) -> bool:
 	return false
 
 
+## Returns true if the event comes from the physical input this binding reads,
+## whatever its value. Unlike matches_event(), a JOY_AXIS binding matches motion
+## on its axis in either direction, including the return to 0 — which is what
+## edge detection needs to notice a release.
+func matches_input(event: InputEvent) -> bool:
+	if type == BindingType.JOY_AXIS and event is InputEventJoypadMotion:
+		var ev := event as InputEventJoypadMotion
+		return (device_id < 0 or device_id == ev.device) and ev.axis == joy_axis
+	return matches_event(event)
+
+
 ## Returns true if this binding is currently held.
 ## assigned_devices is the list of int device IDs owned by the querying player.
 func is_pressed(assigned_devices: Array) -> bool:
@@ -97,7 +109,7 @@ func get_strength(assigned_devices: Array) -> float:
 		BindingType.KEY:
 			if not assigned_devices.has(-1):
 				return 0.0
-			return 1.0 if Input.is_key_pressed(key_code) else 0.0
+			return 1.0 if Input.is_physical_key_pressed(key_code) else 0.0
 		BindingType.MOUSE_BUTTON:
 			if not assigned_devices.has(-1):
 				return 0.0
@@ -126,11 +138,22 @@ func get_strength(assigned_devices: Array) -> float:
 	return 0.0
 
 
-## Returns a human-readable label: "Space", "A Button", "LX +", "Mouse L", etc.
+## Display servers that implement keyboard_get_label_from_physical(). Elsewhere
+## (headless, mobile, web) the call logs an error, so the US QWERTY name is used.
+const _LAYOUT_AWARE_SERVERS: Array[String] = ["Windows", "macOS", "X11", "Wayland"]
+
+
+## Returns a human-readable label: "Space", "Pad A", "Pad LX +", "Mouse L", etc.
 func get_display_name() -> String:
 	match type:
 		BindingType.KEY:
-			return OS.get_keycode_string(key_code)
+			# Label of the key at this position on the user's current layout.
+			var label := key_code
+			if _LAYOUT_AWARE_SERVERS.has(DisplayServer.get_name()):
+				var local := DisplayServer.keyboard_get_label_from_physical(key_code)
+				if local != KEY_NONE:
+					label = local
+			return OS.get_keycode_string(label)
 		BindingType.MOUSE_BUTTON:
 			match mouse_button:
 				MOUSE_BUTTON_LEFT:       return "Mouse L"
@@ -140,10 +163,10 @@ func get_display_name() -> String:
 				MOUSE_BUTTON_WHEEL_DOWN: return "Wheel Down"
 				_: return "Mouse %d" % mouse_button
 		BindingType.JOY_BUTTON:
-			return _joy_button_name(joy_button)
+			return "Pad " + _joy_button_name(joy_button)
 		BindingType.JOY_AXIS:
 			var dir_str := "+" if axis_direction > 0.0 else "-"
-			return "%s %s" % [_joy_axis_name(joy_axis), dir_str]
+			return "Pad %s %s" % [_joy_axis_name(joy_axis), dir_str]
 	return "Unknown"
 
 

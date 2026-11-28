@@ -5,7 +5,7 @@ class_name GameManager
 @onready var name_label: Label = $VBoxContainer/NameLabel
 @onready var number_label: Label = $VBoxContainer/NumberLabel
 @onready var sprite_texture: TextureRect = $VBoxContainer/SpriteTexture
-@onready var dialogue_view: DialogueView = $VBoxContainer/DialogueView
+@onready var dialogue_view: DialogueView = $DialogueView
 @onready var states: GameManagerStates = GameManagerStates.new()
 
 var current_pokemon_id: int = 1

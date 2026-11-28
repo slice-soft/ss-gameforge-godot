@@ -31,6 +31,7 @@ plantilla ni a los demás jugadores.
 
 - `GWInputManager.i` devuelve la instancia activa; `GWInputManager.ensure(root)` la crea.
 - `define_action(name, display_name, bindings, category, max_bindings)` registra una plantilla.
+- `define_axis(name, display_name, positive, negative, category, max_bindings, positive_name, negative_name)` registra una plantilla de eje.
 - `create_player(player_id, player_name)` clona las plantillas en un jugador nuevo.
 - `is_action_pressed(name, player_id)`, `is_action_just_pressed(name, event, player_id)`,
   `is_action_just_released(name, event, player_id)`, `get_action_strength(name, player_id)`.
@@ -38,6 +39,13 @@ plantilla ni a los demás jugadores.
 - `start_rebind_listen(player_id, action_name, binding_index)` captura la siguiente entrada.
 - `save_all_profiles(path)` / `load_all_profiles(path)` persisten los bindings como JSON.
 - `GWBinding.from_key()`, `.from_joy_button()`, `.from_joy_axis()`, `.from_mouse_button()`.
+
+> Los bindings de teclado son **físicos**: `from_key(KEY_W)` es la tecla en la
+> posición de la W, que en un teclado AZERTY es la Z, así que WASD funciona en
+> cualquier distribución. `GWBinding.get_display_name()` muestra la etiqueta de
+> esa tecla en la distribución actual del jugador (en escritorio; en headless,
+> móvil y web usa el nombre de US QWERTY). Las entradas de gamepad llevan prefijo
+> — `Pad A`, `Pad LX +` — para que nunca se confundan con teclas.
 
 ## Uso: crear el manager
 
@@ -92,8 +100,12 @@ func _process(_delta: float) -> void:
 ```
 
 Llamados sin evento, `is_action_just_pressed()` e `is_action_just_released()`
-usan seguimiento por frame, así que son seguros dentro de `_process()`. Pasa el
-evento cuando estés en `_input()` y quieras reaccionar a ese evento exacto:
+usan seguimiento por frame, así que son seguros dentro de `_process()` y de
+`_physics_process()`. Una pulsación cuenta una sola vez: mantener el stick, la
+repetición de tecla o pulsar un segundo binding de una acción que ya está
+presionada no la vuelve a disparar, y la liberación solo se emite cuando ya no
+queda ningún binding presionado. Pasa el evento cuando estés en `_input()` y
+quieras reaccionar a ese evento exacto:
 
 ```gdscript
 func _input(event: InputEvent) -> void:
@@ -122,6 +134,17 @@ var p2 := wired.create_player(1, "Player 2")
 p2.assign_gamepad(0)
 ```
 
+Asignar un pad se lo quita a quien lo tuviera antes. Para un solo jugador que
+debe tomar cualquier pad que se conecte, usa `accepts_any_gamepad`: lee todos
+los pads conectados que ningún otro jugador haya reclamado. Cargar una config
+`SINGLE` u `ONLINE` lo activa para el jugador 0.
+
+```gdscript
+var p1 := wired.create_player(0, "Player 1")
+p1.accepts_keyboard = true
+p1.accepts_any_gamepad = true
+```
+
 Luego pasa el id del jugador al leer:
 
 ```gdscript
@@ -146,12 +169,18 @@ func _on_device_pressed(device_id: int) -> void:
 ```
 
 `get_unassigned_gamepads()` lista los pads todavía libres, y
-`device_connected` / `device_disconnected` cubren la conexión en caliente.
+`device_connected` / `device_disconnected` cubren la conexión en caliente. Un
+pad que se desconecta vuelve al mismo jugador cuando se reconecta.
+
+> Llamar a `create_player()` con un id que ya existe reemplaza a ese jugador
+> (primero se emite `player_removed`) y libera sus pads.
 
 ## Uso: remapear en tiempo de ejecución
 
 El remapeo es un modo de escucha: el manager captura la siguiente entrada válida
-y la escribe en el slot que nombraste.
+de un dispositivo **que pertenece al jugador** y la escribe en el slot que
+nombraste. La entrada de dispositivos de otros jugadores se ignora, así que P1
+no puede remapear con el pad de P2.
 
 ```gdscript
 func _on_boton_remapear(action_name: String) -> void:
@@ -167,14 +196,38 @@ func _on_remapped(player_id: int, action_name: String) -> void:
 ```
 
 `binding_index` es qué slot sobrescribir — `0` es el binding principal, `1` la
-primera alternativa, y así.
+primera alternativa, y así. Un slot más allá de `max_bindings` no se puede
+llenar: el remapeo se cancela y se emite `rebind_cancelled` en lugar de
+`binding_remapped`.
 
-Mientras escucha, `is_listening_for_rebind()` devuelve true. Úsalo para pausar el
-gameplay; si no, la tecla que se está capturando también dispara aquello a lo que
-está asignada hoy. `cancel_rebind_listen()` aborta y emite `rebind_cancelled`.
+`start_rebind_listen()` devuelve `false` y no escucha cuando el jugador o la
+acción no existen, o la acción tiene `allow_rebind = false`.
 
-> Las acciones con `allow_rebind` en false están pensadas para quedarse fijas;
-> déjalas fuera de la pantalla de remapeo.
+Mientras escucha, `is_listening_for_rebind()` devuelve true y las consultas de
+gameplay no reciben entrada, así que la tecla que se está capturando no dispara
+también aquello a lo que está asignada hoy. `cancel_rebind_listen()` aborta y
+emite `rebind_cancelled`.
+
+Los bindings de gamepad capturados se guardan con `device_id = -1`, es decir
+"cualquier pad de este jugador", así que siguen funcionando tras una reconexión
+o en otra máquina.
+
+Para remapear el lado negativo de una acción de eje, pasa `negative = true`:
+
+```gdscript
+GWInputManager.i.start_rebind_listen(0, "steer", 0, true)   # "girar a la izquierda"
+```
+
+Si la nueva entrada ya está asignada a otras acciones del mismo jugador, el
+remapeo se mantiene y se emite
+`rebind_conflict(player_id, action_name, conflicting_actions)` para que la
+pantalla avise o intercambie:
+
+```gdscript
+GWInputManager.i.rebind_conflict.connect(func(pid, action, others):
+	warning.text = "%s también lo usa %s" % [action, ", ".join(others)]
+)
+```
 
 ## Uso: guardar los bindings
 
@@ -186,7 +239,9 @@ GWInputManager.i.reset_all_to_defaults()
 
 `load_all_profiles()` no hace nada si el archivo no existe, y solo aplica
 bindings a jugadores que **ya existen** — así que crea los jugadores primero y
-carga después.
+carga después. Además de los bindings restaura `accepts_keyboard` y
+`accepts_any_gamepad` de cada jugador. Las asignaciones de gamepads no se
+guardan, porque los ids de dispositivo cambian entre sesiones.
 
 Para varios perfiles con nombre, `GWProfileManager` envuelve lo mismo en slots:
 
@@ -225,8 +280,16 @@ dirección positiva y una segunda lista para la negativa, y se lee como un únic
 valor en `[-1.0, 1.0]`:
 
 ```gdscript
-var throttle := GWInputManager.i.get_action_axis("throttle")
+wired.define_axis("steer", "Steer",
+	[GWBinding.from_key(KEY_D), GWBinding.from_joy_axis(JOY_AXIS_LEFT_X, 1.0)],
+	[GWBinding.from_key(KEY_A), GWBinding.from_joy_axis(JOY_AXIS_LEFT_X, -1.0)],
+	"Driving", 2, "right", "left")
+
+var steer := GWInputManager.i.get_action_axis("steer")
 ```
+
+En un `GWConfig`, pon `action_type` en `AXIS` y llena `default_bindings` (lado
+positivo) y `default_negative_bindings` (lado negativo).
 
 `positive_name` y `negative_name` en la acción son las etiquetas que muestra una
 pantalla de remapeo para cada lado ("acelerar" / "frenar").

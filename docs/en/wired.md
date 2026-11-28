@@ -31,6 +31,7 @@ template or the other players.
 
 - `GWInputManager.i` returns the active instance; `GWInputManager.ensure(root)` creates it.
 - `define_action(name, display_name, bindings, category, max_bindings)` registers a template.
+- `define_axis(name, display_name, positive, negative, category, max_bindings, positive_name, negative_name)` registers an axis template.
 - `create_player(player_id, player_name)` clones the templates into a new player.
 - `is_action_pressed(name, player_id)`, `is_action_just_pressed(name, event, player_id)`,
   `is_action_just_released(name, event, player_id)`, `get_action_strength(name, player_id)`.
@@ -38,6 +39,13 @@ template or the other players.
 - `start_rebind_listen(player_id, action_name, binding_index)` captures the next input.
 - `save_all_profiles(path)` / `load_all_profiles(path)` persist bindings as JSON.
 - `GWBinding.from_key()`, `.from_joy_button()`, `.from_joy_axis()`, `.from_mouse_button()`.
+
+> Key bindings are **physical**: `from_key(KEY_W)` means the key in the W
+> position, which is Z on an AZERTY keyboard, so WASD works on every layout.
+> `GWBinding.get_display_name()` shows the label of that key on the player's
+> current layout (on desktop; headless, mobile and web fall back to the US QWERTY
+> name). Gamepad inputs are prefixed — `Pad A`, `Pad LX +` — so they never read
+> like keys.
 
 ## Usage: creating the manager
 
@@ -92,8 +100,10 @@ func _process(_delta: float) -> void:
 
 Called without an event, `is_action_just_pressed()` and
 `is_action_just_released()` use per-frame tracking, so they are safe in
-`_process()`. Pass the event when you are inside `_input()` and want to react to
-that exact event:
+`_process()` and `_physics_process()`. A press counts once: holding a stick, key
+repeat, or pressing a second binding of an action that is already held does not
+fire it again, and the release fires only when no binding is held anymore. Pass
+the event when you are inside `_input()` and want to react to that exact event:
 
 ```gdscript
 func _input(event: InputEvent) -> void:
@@ -122,6 +132,17 @@ var p2 := wired.create_player(1, "Player 2")
 p2.assign_gamepad(0)
 ```
 
+Assigning a pad takes it away from whoever had it before. For a single player
+who should pick up any pad that gets plugged in, set `accepts_any_gamepad`
+instead — it reads every connected pad no other player has claimed. Loading a
+`SINGLE` or `ONLINE` config does this for player 0.
+
+```gdscript
+var p1 := wired.create_player(0, "Player 1")
+p1.accepts_keyboard = true
+p1.accepts_any_gamepad = true
+```
+
 Then pass the player id when reading:
 
 ```gdscript
@@ -145,12 +166,17 @@ func _on_device_pressed(device_id: int) -> void:
 ```
 
 `get_unassigned_gamepads()` lists the pads still free, and
-`device_connected` / `device_disconnected` cover hot-plugging.
+`device_connected` / `device_disconnected` cover hot-plugging. A pad that
+disconnects is handed back to the same player when it reconnects.
+
+> Calling `create_player()` with an id that already exists replaces that player
+> (`player_removed` fires first) and frees its pads.
 
 ## Usage: rebinding at runtime
 
-Rebinding is a listen mode: the manager captures the next valid input and writes
-it into the slot you named.
+Rebinding is a listen mode: the manager captures the next valid input from a
+device **the player owns** and writes it into the slot you named. Input from
+other players' devices is ignored, so P1 cannot rebind with P2's pad.
 
 ```gdscript
 func _on_rebind_button_pressed(action_name: String) -> void:
@@ -166,14 +192,34 @@ func _on_remapped(player_id: int, action_name: String) -> void:
 ```
 
 `binding_index` is which slot to overwrite — `0` is the primary binding, `1` the
-first alternate, and so on.
+first alternate, and so on. A slot past `max_bindings` cannot be filled: the
+rebind is cancelled and `rebind_cancelled` fires instead of `binding_remapped`.
 
-While listening, `is_listening_for_rebind()` returns true. Use it to pause
-gameplay, otherwise the key being captured also triggers whatever it is bound to
-today. `cancel_rebind_listen()` aborts and emits `rebind_cancelled`.
+`start_rebind_listen()` returns `false` and does not listen when the player or
+action does not exist, or the action has `allow_rebind = false`.
 
-> Actions whose `allow_rebind` is false are meant to stay fixed; keep them out of
-> the rebind screen.
+While listening, `is_listening_for_rebind()` returns true and gameplay queries
+receive no input, so the key being captured does not also trigger whatever it is
+bound to today. `cancel_rebind_listen()` aborts and emits `rebind_cancelled`.
+
+Captured gamepad bindings are stored with `device_id = -1`, meaning "any pad
+this player owns", so they keep working after a reconnect or on another machine.
+
+To rebind the negative side of an axis action, pass `negative = true`:
+
+```gdscript
+GWInputManager.i.start_rebind_listen(0, "steer", 0, true)   # "steer left"
+```
+
+If the new input is already bound to other actions of the same player, the
+rebind is kept and `rebind_conflict(player_id, action_name, conflicting_actions)`
+fires so the screen can warn or swap:
+
+```gdscript
+GWInputManager.i.rebind_conflict.connect(func(pid, action, others):
+	warning.text = "%s is also used by %s" % [action, ", ".join(others)]
+)
+```
 
 ## Usage: saving bindings
 
@@ -185,7 +231,9 @@ GWInputManager.i.reset_all_to_defaults()
 
 `load_all_profiles()` does nothing if the file is missing, and only applies
 bindings to players that **already exist** — so create the players first, then
-load.
+load. Besides bindings it restores each player's `accepts_keyboard` and
+`accepts_any_gamepad`. Gamepad assignments are not saved, since device ids
+change between sessions.
 
 For several named profiles, `GWProfileManager` wraps the same thing in slots:
 
@@ -223,8 +271,16 @@ positive direction and a second list for the negative one, and reads back as a
 single value in `[-1.0, 1.0]`:
 
 ```gdscript
-var throttle := GWInputManager.i.get_action_axis("throttle")
+wired.define_axis("steer", "Steer",
+	[GWBinding.from_key(KEY_D), GWBinding.from_joy_axis(JOY_AXIS_LEFT_X, 1.0)],
+	[GWBinding.from_key(KEY_A), GWBinding.from_joy_axis(JOY_AXIS_LEFT_X, -1.0)],
+	"Driving", 2, "right", "left")
+
+var steer := GWInputManager.i.get_action_axis("steer")
 ```
+
+In a `GWConfig`, set `action_type` to `AXIS` and fill `default_bindings`
+(positive side) and `default_negative_bindings` (negative side).
 
 `positive_name` and `negative_name` on the action are the labels a rebind screen
 shows for each side ("accelerate" / "brake").
