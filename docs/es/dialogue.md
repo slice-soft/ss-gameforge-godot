@@ -222,6 +222,13 @@ todos los diálogos (caja de pantalla, globos 2D y 3D) se ocultan para que se ve
 la escena detrás. No se pausan: las líneas siguen escribiéndose y `skip_action`
 sigue avanzando. Al soltar el botón vuelven a verse.
 
+Asigna `hide_action` a un botón cercano al de `skip_action`: el jugador lo
+mantiene para mirar, lo suelta para leer y presiona continuar como siempre.
+
+> Usa el ocultar con el modo de avance `MANUAL`. En `AUTO` y `HYBRID` el
+> temporizador sigue avanzando mientras el diálogo está oculto, así que el
+> jugador puede perderse líneas.
+
 Desde código, `DialogueView.set_all_hidden(true)` los oculta todos hasta
 `set_all_hidden(false)`, sin depender del botón, y `DialogueView.is_all_hidden()`
 dice si están ocultos. Las vistas creadas mientras están ocultos arrancan

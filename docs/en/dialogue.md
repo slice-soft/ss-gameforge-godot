@@ -219,6 +219,12 @@ dialogue (screen box, 2D and 3D bubbles) is hidden so the scene behind can be
 seen. They are not paused: lines keep typing and `skip_action` still advances.
 Releasing the button shows them again.
 
+Bind `hide_action` to a button next to `skip_action`: the player holds it to
+look, lets go to read, and presses continue as usual.
+
+> Use hiding with `MANUAL` advance mode. In `AUTO` and `HYBRID` the timer keeps
+> advancing while the dialogue is hidden, so the player can miss lines.
+
 From code, `DialogueView.set_all_hidden(true)` hides them all until
 `set_all_hidden(false)`, independently from the button, and
 `DialogueView.is_all_hidden()` tells whether they are hidden. Views created
