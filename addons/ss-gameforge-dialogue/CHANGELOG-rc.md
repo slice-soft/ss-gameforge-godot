@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.3.0-rc.3](https://github.com/slice-soft/ss-gameforge-godot/compare/ss-gameforge-dialogue-v1.3.0-rc.2...ss-gameforge-dialogue-v1.3.0-rc.3) (2026-11-28)
+
+
+### Features
+
+* **dialogue:** speaker name, portrait and typing voice ([457f4c6](https://github.com/slice-soft/ss-gameforge-godot/commit/457f4c625e92297290d3c64dfd277431810d3c6f))
+* **dialogue:** speaker name, portrait and typing voice ([#90](https://github.com/slice-soft/ss-gameforge-godot/issues/90)) ([#91](https://github.com/slice-soft/ss-gameforge-godot/issues/91)) ([457f4c6](https://github.com/slice-soft/ss-gameforge-godot/commit/457f4c625e92297290d3c64dfd277431810d3c6f))
+
+
+### Bug Fixes
+
+* **dialogue:** bubble shrinks to wrapped text with a portrait ([e31f494](https://github.com/slice-soft/ss-gameforge-godot/commit/e31f49464636b807a6939842aeb65d917903e634))
+* **dialogue:** bubble shrinks to wrapped text with a portrait ([#93](https://github.com/slice-soft/ss-gameforge-godot/issues/93)) ([#94](https://github.com/slice-soft/ss-gameforge-godot/issues/94)) ([e31f494](https://github.com/slice-soft/ss-gameforge-godot/commit/e31f49464636b807a6939842aeb65d917903e634))
+
 ## [1.3.0-rc.2](https://github.com/slice-soft/ss-gameforge-godot/compare/ss-gameforge-dialogue-v1.3.0-rc.1...ss-gameforge-dialogue-v1.3.0-rc.2) (2026-11-28)
 
 
