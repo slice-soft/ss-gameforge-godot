@@ -20,6 +20,14 @@ class_name DialogueTheme extends Resource
 ## Leave empty to use the project's default theme font.
 @export var font: Font
 
+@export_group("Speaker")
+## Colour of the speaker's name, unless the speaker sets its own.
+@export var name_color: Color = Color(1.0, 0.82, 0.4, 1.0)
+## Font size of the speaker's name. 0 = font_size.
+@export var name_font_size: int = 0
+## Size the portrait is drawn at, keeping its aspect.
+@export var portrait_size: Vector2 = Vector2(64.0, 64.0)
+
 @export_group("Position")
 ## SCREEN layout: distance from the left, right and bottom edges of the
 ## DialogueView (the whole screen by default). The box spans the width and grows

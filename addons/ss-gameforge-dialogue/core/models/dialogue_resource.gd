@@ -6,6 +6,11 @@ class_name DialogueResource extends Resource
 @export_group("Content")
 @export var dialogues: Array[String] = ["dialogue_key_placeholder"]
 @export var use_translation: bool = true
+## Who speaks every line, unless line_speakers names someone else. Empty = no
+## name, portrait or voice.
+@export var speaker: DialogueSpeaker
+## Per-line speaker, by line index. A missing or empty entry uses speaker.
+@export var line_speakers: Array[DialogueSpeaker] = []
 
 @export_group("Behavior")
 @export var auto_start: bool = false
@@ -31,3 +36,10 @@ class_name DialogueResource extends Resource
 @export_range(0.0, 2.0) var close_time: float = 0.20
 @export var close_transition: Tween.TransitionType = Tween.TRANS_BACK
 @export var close_ease: Tween.EaseType = Tween.EASE_IN_OUT
+
+
+## The speaker of line `index`: its line_speakers entry, or speaker.
+func get_speaker(index: int) -> DialogueSpeaker:
+	if index >= 0 and index < line_speakers.size() and line_speakers[index] != null:
+		return line_speakers[index]
+	return speaker

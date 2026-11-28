@@ -26,7 +26,8 @@ dialogue box or a speech bubble over a character, in 2D or 3D
 - `@export layout`: `SCREEN` (bottom box) or `BUBBLE` (speech bubble).
 - `@export input_mode`: `AUTO`, `EVENTS`, `POLLING` or `NONE`.
 - `DialogueView3D` is a `Node3D` speech bubble wrapping a `DialogueView`.
-- Signals: `dialogue_started`, `line_changed(index)`, `dialogue_finished`.
+- `DialogueSpeaker` gives a line a name, portrait and voice; `get_speaker()` returns the current one.
+- Signals: `dialogue_started`, `line_changed(index)`, `character_typed(character)`, `dialogue_finished`.
 - `@export skip_action` is the input action that skips typing or advances. Defaults to `ui_accept`.
 - `DialogueResource` holds the lines and every timing/animation setting.
 - `DialogueConstants.AdvanceMode`: `AUTO`, `MANUAL`, `HYBRID`.
@@ -180,6 +181,41 @@ func _process(_delta: float) -> void:
 		bubble.skip()
 ```
 
+## Usage: speakers — name, portrait and voice
+
+A `DialogueSpeaker` resource describes who is talking. Make one per character
+and reuse it:
+
+| Field | Does |
+|---|---|
+| `display_name` | Shown above the text (through `tr()` when the resource uses translation). Empty = no name. |
+| `name_color` | Colour of the name. Transparent = the theme's `name_color`. |
+| `portrait` | Drawn beside the text at the theme's `portrait_size`. Empty = no portrait. |
+| `voice` | Short sound played while the line types. Empty = silent. |
+| `voice_pitch`, `pitch_variation` | Base pitch, and the random change per blip (`0.05` = ±5%). |
+| `voice_every` | Blip every this many characters (spaces skipped). |
+| `voice_volume_db` | Volume of the blip. |
+
+Set `speaker` on the resource for the whole sequence, and `line_speakers` to
+change speaker on given lines (by index; a missing or empty entry uses
+`speaker`):
+
+```gdscript
+const ANA := preload("res://characters/ana_speaker.tres")
+const BO := preload("res://characters/bo_speaker.tres")
+
+resource.dialogues = ["Did you hear that?", "Hear what?", "Never mind."]
+resource.speaker = ANA
+resource.line_speakers = [null, BO]   # line 1 is Bo, the rest Ana
+```
+
+It works the same in the screen box and in 2D/3D bubbles; a bubble grows to fit
+the portrait and the name. Voice blips play on `voice_bus` (default `Master`).
+Skipping a line completes it silently.
+
+For anything else per character — mouth flaps, your own sound system — connect
+`character_typed(character)`, emitted for each character as it is revealed.
+
 ## Usage: history and going back
 
 Every line a view shows is written to its `history`, a `DialogueHistory`
@@ -194,7 +230,7 @@ func _ready() -> void:
 	$Npc/DialogueView3D.history = log
 ```
 
-Each entry is `{"text", "resource", "index"}`, with the text as it was shown
+Each entry is `{"text", "speaker", "speaker_name", "resource", "index"}`, with the text as it was shown
 (translated, BBCode included). The addon records; your game decides how the
 backlog looks:
 
@@ -254,7 +290,8 @@ dialogue_view.apply_theme()
 ```
 
 The theme covers the box (`background_color`, `border_color`, `border_width`,
-`corner_radius`, `padding`), the text (`font_color`, `font_size`, `font`) and
+`corner_radius`, `padding`), the text (`font_color`, `font_size`, `font`), the speaker (`name_color`,
+`name_font_size`, `portrait_size`) and
 `position_margin`, the distance from the view's left, right and bottom edges
 (`SCREEN` layout), and `bubble_max_width`, where a bubble's text starts to wrap
 (`BUBBLE` layout, default 320 px).
