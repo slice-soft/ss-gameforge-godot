@@ -383,12 +383,19 @@ func load_all_profiles(path: String = DEFAULT_SAVE_PATH) -> void:
 ## Restores all players to the default bindings defined in action templates.
 func reset_all_to_defaults() -> void:
 	for player_id in players:
-		var player: GWPlayer = players[player_id]
-		for action_name in _action_templates:
-			var template: GWAction = _action_templates[action_name]
-			player.actions[action_name] = template.duplicate_full()
-			binding_remapped.emit(player_id, action_name)
-		player.clear_input_state()
+		reset_player_to_defaults(player_id)
+
+
+## Restores one player's actions to the default bindings of the templates.
+func reset_player_to_defaults(player_id: int) -> void:
+	var player := get_player(player_id)
+	if player == null:
+		return
+	for action_name in _action_templates:
+		var template: GWAction = _action_templates[action_name]
+		player.actions[action_name] = template.duplicate_full()
+		binding_remapped.emit(player_id, action_name)
+	player.clear_input_state()
 
 
 # --- Private: device scanning ---

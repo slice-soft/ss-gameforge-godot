@@ -37,6 +37,8 @@ plantilla ni a los demás jugadores.
   `is_action_just_released(name, event, player_id)`, `get_action_strength(name, player_id)`.
 - `get_action_axis(name, player_id)` y `get_vector(neg_x, pos_x, neg_y, pos_y, player_id)`.
 - `start_rebind_listen(player_id, action_name, binding_index)` captura la siguiente entrada.
+- `GWRebindMenu` (`scenes/gw_rebind_menu.tscn`) es una pantalla de remapeo lista, construida sobre esa API.
+- `reset_player_to_defaults(player_id)` restaura un jugador; `GWPlayer.remove_binding(action, slot, negative)` vacía una ranura.
 - `save_all_profiles(path)` / `load_all_profiles(path)` persisten los bindings como JSON.
 - `GWBinding.from_key()`, `.from_joy_button()`, `.from_joy_axis()`, `.from_mouse_button()`.
 
@@ -228,6 +230,59 @@ GWInputManager.i.rebind_conflict.connect(func(pid, action, others):
 	warning.text = "%s también lo usa %s" % [action, ", ".join(others)]
 )
 ```
+
+## Uso: el menú de remapeo listo
+
+`GWRebindMenu` es una pantalla de controles que puedes meter en cualquier menú
+de opciones. Instancia
+`res://addons/ss-gameforge-wired/scenes/gw_rebind_menu.tscn` y muéstrala:
+
+```gdscript
+const REBIND_MENU := preload("res://addons/ss-gameforge-wired/scenes/gw_rebind_menu.tscn")
+
+func open_controls() -> void:
+	var menu: GWRebindMenu = REBIND_MENU.instantiate()
+	menu.player_id = 0
+	menu.closed.connect(menu.queue_free)
+	$UI.add_child(menu)
+```
+
+Lista las acciones del jugador por categoría, una fila por acción (dos para un
+eje: su lado positivo y su lado negativo, nombrados con `positive_name` /
+`negative_name`) y un botón por ranura de binding:
+
+- **Presiona una ranura** (clic, o `ui_accept` con el foco de teclado o mando)
+  y la siguiente entrada del jugador pasa a ser ese binding. Escape o
+  `listen_timeout` segundos la cancelan.
+- **Clic derecho sobre una ranura** la vacía.
+- **Reset to defaults** restaura los bindings por defecto de este jugador.
+- **Back**, o `ui_cancel`, emite `closed`. Qué pasa después lo decides tú.
+
+Ocultar el menú cancela una captura en curso. Solo ofrece la primera ranura
+vacía de cada acción (los bindings se llenan en orden) y oculta las acciones con
+`allow_rebind = false`, salvo que actives `show_locked_actions`.
+
+| Propiedad | Por defecto | Hace |
+|---|---|---|
+| `player_id` | `0` | De quién son los bindings que se muestran. Cambiarlo reconstruye la lista. |
+| `slots` | `2` | Columnas de ranuras. Una acción con `max_bindings` menor muestra menos. |
+| `categories` | todas | Solo estas categorías, en este orden. |
+| `conflict_policy` | `WARN` | `WARN` deja ambos y muestra un aviso; `SWAP` le da a las otras acciones el binding que tenía la ranura. |
+| `listen_timeout` | `5.0` | Segundos antes de abandonar una captura (`0` = nunca). |
+| `auto_save` / `save_path` | `true` / archivo por defecto | Guarda cada cambio con `save_all_profiles()`. |
+| `focus_on_show` | `true` | Enfoca la primera ranura al mostrarse, para navegar con mando. |
+| Grupo de textos | inglés | Título, avisos y botones; cada uno pasa por `tr()`. |
+
+Señales: `closed`, `binding_changed(action_name, slot, negative)` y
+`conflict_detected(action_name, conflicting_actions)`.
+
+El menú trae un `Theme` sencillo por defecto. Reemplaza el `theme` de la raíz
+por el tuyo para cambiar su estilo. Además de los tipos estándar usa las
+variaciones de tipo `GWRebindCategory` y `GWRebindAction` (Labels),
+`GWRebindSlot` (Buttons) y `GWRebindStatus` (la línea de aviso y conflictos).
+
+Para cooperativo local, muestra un menú por jugador con distinto `player_id`:
+cada uno captura solo de los dispositivos de su jugador.
 
 ## Uso: guardar los bindings
 

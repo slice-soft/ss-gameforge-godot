@@ -202,6 +202,19 @@ static func _joy_axis_name(axis: JoyAxis) -> String:
 
 # --- Serialization ---
 
+## True when both bindings read the same physical input (device and deadzone
+## are not compared).
+func same_input(other: GWBinding) -> bool:
+	if other == null or other.type != type:
+		return false
+	match type:
+		BindingType.KEY:          return other.key_code == key_code
+		BindingType.MOUSE_BUTTON: return other.mouse_button == mouse_button
+		BindingType.JOY_BUTTON:   return other.joy_button == joy_button
+		BindingType.JOY_AXIS:     return other.joy_axis == joy_axis and signf(other.axis_direction) == signf(axis_direction)
+	return false
+
+
 ## Serializes this binding to a plain Dictionary.
 func to_dict() -> Dictionary:
 	return {

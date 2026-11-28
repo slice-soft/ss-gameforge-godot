@@ -63,11 +63,13 @@ func set_binding(index: int, binding: GWBinding, negative: bool = false) -> bool
 	return true
 
 
-## Removes the binding at the given slot index.
-func remove_binding(index: int) -> void:
-	if index < 0 or index >= bindings.size():
+## Removes the binding at the given slot index; later slots move up one.
+## With negative = true it removes from the negative side of an AXIS action.
+func remove_binding(index: int, negative: bool = false) -> void:
+	var list := negative_bindings if negative else bindings
+	if index < 0 or index >= list.size():
 		return
-	bindings.remove_at(index)
+	list.remove_at(index)
 	binding_removed.emit(index)
 
 
