@@ -215,6 +215,17 @@ func set_binding(action_name: String, index: int, binding: GWBinding, negative: 
 	return true
 
 
+## Removes the binding at slot index for the named action; later slots move up.
+## With negative = true it removes from the negative side of an AXIS action.
+func remove_binding(action_name: String, index: int, negative: bool = false) -> void:
+	var action := _get_action(action_name)
+	if action == null:
+		return
+	action.remove_binding(index, negative)
+	_held.erase(action_name)
+	action_rebound.emit(action_name)
+
+
 ## Clears all bindings for the named action.
 func clear_action_bindings(action_name: String) -> void:
 	var action := _get_action(action_name)

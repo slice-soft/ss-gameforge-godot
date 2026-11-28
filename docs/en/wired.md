@@ -37,6 +37,8 @@ template or the other players.
   `is_action_just_released(name, event, player_id)`, `get_action_strength(name, player_id)`.
 - `get_action_axis(name, player_id)` and `get_vector(neg_x, pos_x, neg_y, pos_y, player_id)`.
 - `start_rebind_listen(player_id, action_name, binding_index)` captures the next input.
+- `GWRebindMenu` (`scenes/gw_rebind_menu.tscn`) is a ready-made remapping screen built on that API.
+- `reset_player_to_defaults(player_id)` restores one player; `GWPlayer.remove_binding(action, slot, negative)` clears a slot.
 - `save_all_profiles(path)` / `load_all_profiles(path)` persist bindings as JSON.
 - `GWBinding.from_key()`, `.from_joy_button()`, `.from_joy_axis()`, `.from_mouse_button()`.
 
@@ -220,6 +222,59 @@ GWInputManager.i.rebind_conflict.connect(func(pid, action, others):
 	warning.text = "%s is also used by %s" % [action, ", ".join(others)]
 )
 ```
+
+## Usage: the ready-made rebind menu
+
+`GWRebindMenu` is a controls screen you can drop into any options menu.
+Instance `res://addons/ss-gameforge-wired/scenes/gw_rebind_menu.tscn` and show
+it:
+
+```gdscript
+const REBIND_MENU := preload("res://addons/ss-gameforge-wired/scenes/gw_rebind_menu.tscn")
+
+func open_controls() -> void:
+	var menu: GWRebindMenu = REBIND_MENU.instantiate()
+	menu.player_id = 0
+	menu.closed.connect(menu.queue_free)
+	$UI.add_child(menu)
+```
+
+It lists the player's actions by category, one row per action (two for an
+axis: its positive and negative side, named by `positive_name` /
+`negative_name`) and one button per binding slot:
+
+- **Press a slot** (click, or `ui_accept` with keyboard or pad focus) and the
+  player's next input becomes that binding. Escape or `listen_timeout` seconds
+  cancel it.
+- **Right-click a slot** to clear it.
+- **Reset to defaults** restores this player's template bindings.
+- **Back**, or `ui_cancel`, emits `closed`. What happens next is up to you.
+
+Hiding the menu cancels a capture in progress. It only offers the first empty
+slot of an action (bindings fill in order) and hides actions with
+`allow_rebind = false` unless `show_locked_actions` is on.
+
+| Property | Default | Does |
+|---|---|---|
+| `player_id` | `0` | Whose bindings are shown. Changing it rebuilds the list. |
+| `slots` | `2` | Slot columns. An action with a lower `max_bindings` shows fewer. |
+| `categories` | all | Only these categories, in this order. |
+| `conflict_policy` | `WARN` | `WARN` keeps both and shows a warning; `SWAP` gives the other actions the binding the slot had before. |
+| `listen_timeout` | `5.0` | Seconds before a capture gives up (`0` = never). |
+| `auto_save` / `save_path` | `true` / default file | Save every change with `save_all_profiles()`. |
+| `focus_on_show` | `true` | Focus the first slot when shown, for gamepad navigation. |
+| Texts group | English | Title, prompts and buttons; each goes through `tr()`. |
+
+Signals: `closed`, `binding_changed(action_name, slot, negative)` and
+`conflict_detected(action_name, conflicting_actions)`.
+
+The menu ships with a small default `Theme`. Replace the root's `theme` with
+your own to restyle it. Besides the stock types it uses the type variations
+`GWRebindCategory` and `GWRebindAction` (Labels), `GWRebindSlot` (Buttons) and
+`GWRebindStatus` (the prompt and conflict line).
+
+For local co-op, show one menu per player with a different `player_id`: each
+captures only from its own player's devices.
 
 ## Usage: saving bindings
 
