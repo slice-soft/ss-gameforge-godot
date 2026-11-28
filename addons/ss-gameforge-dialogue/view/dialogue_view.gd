@@ -521,6 +521,17 @@ func _fit_bubble() -> void:
 		_label.custom_minimum_size.x = ceilf(text_width)
 	_box.reset_size()
 	_place_bubble()
+	# The wrapped label only knows its height once it has its new width, which
+	# happens on the next layout pass; shrink the box again then, or it keeps the
+	# height measured at the old, narrower width.
+	_shrink_bubble.call_deferred()
+
+
+func _shrink_bubble() -> void:
+	if layout != Layout.BUBBLE:
+		return
+	_box.reset_size()
+	_place_bubble()
 
 
 func _place_bubble() -> void:
